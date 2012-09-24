@@ -1,0 +1,2 @@
+•¡”‚ÌKinect“®‚©‚µ‚½‚¢.
+GUI‚Æ‚©‚»‚ñ‚È‚ñ‚ðì‚ë‚¤.
