@@ -15,5 +15,10 @@ namespace MotorSettingGUI
         {
             InitializeComponent();
         }
+
+        private void ファイルFToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }
