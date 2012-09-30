@@ -3,6 +3,7 @@
 #include <sstream>
 #include <vector>
 #include <thread>
+#include <fstream>
 #include <boost/optional.hpp>
 #include <boost/algorithm/string.hpp>
 
@@ -47,7 +48,7 @@ void init( std::vector< Runtime > & runtime )
 {
 	using namespace std;
 	NUI_IMAGE_RESOLUTION const resolution = NUI_IMAGE_RESOLUTION_640x480;
-
+	
 	for( size_t i = 0; i < runtime.size(); ++i )
 	{
 		NuiCreateSensorByIndex( i, & runtime[ i ].kinect );
@@ -106,9 +107,25 @@ boost::optional< NUI_LOCKED_RECT > get_image( NUI_IMAGE_FRAME const & image_fram
 		return boost::optional< NUI_LOCKED_RECT >( std::move( rect ) );
 }
 
+void wait_input( bool & input_come, std::string & input )
+{
+	while( input != "end" )
+	{
+		if( ! input_come )
+		{
+			std::cin >> input;
+			input_come = true;
+			Sleep( 300 );
+		}
+	}
+}
+
 
 void draw()
 {
+	using namespace std;
+
+	ofstream ofs( "test.txt",  ios::binary );
 	try {
 		NUI_IMAGE_RESOLUTION const resolution = NUI_IMAGE_RESOLUTION_640x480;
 
@@ -128,9 +145,9 @@ void draw()
 		long now_angle = 0;
 
 		string input;
-
-		//cv::VideoWriter video_writer( "capture.avi",  CV_FOURCC('F', 'L', 'V', '1'), 30,  cvSize( 640, 480 ) );
+		bool input_come = false;
 		
+		thread input_wait_thread( wait_input, ref( input_come ), ref( input ) );
 
 		while ( continue_flag )
 		{
@@ -162,7 +179,7 @@ void draw()
 					}
 				}
 				// 画像データの取得
-				if( auto rect = get_image( image_frame_color_, "COLOR" ) )
+				if( auto rect = std::move( get_image( image_frame_color_, "COLOR" ) ) )
 				{
 					// データのコピーと表示
 					memcpy( runtime[ i ].color_.image_->imageData, (BYTE*)rect->pBits, \
@@ -170,45 +187,52 @@ void draw()
 					::cvShowImage( runtime[ i ].color_.window_name_.c_str(), runtime[ i ].color_.image_ );
 				}
 				// 画像データの取得
-				if( auto rect = get_image( image_frame_depth_, "DEPTH" ) )
+				if( auto rect = std::move( get_image( image_frame_depth_, "DEPTH" ) ) )
 				{
 					// データのコピーと表示
 					memcpy( runtime[ i ].depth_.image_->imageData, (BYTE*)rect->pBits, \
 						runtime[ i ].depth_.image_->widthStep * runtime[ i ].depth_.image_->height );
 					::cvShowImage( runtime[ i ].depth_.window_name_.c_str(), runtime[ i ].depth_.image_ );
+					ofs.write( ( char * )rect->pBits, 640 * 480 * 2);
 				}
 
 				// カメラデータの解放
 				runtime[ i ].kinect->NuiImageStreamReleaseFrame( runtime[ i ].color_.stream_handle_, image_frame_color );
 				runtime[ i ].kinect->NuiImageStreamReleaseFrame( runtime[ i ].depth_.stream_handle_, image_frame_depth );
 
-				if( i == 0 )
+				//終了信号
+				if( input_come )
 				{
-					//video_writer << cv::Mat( runtime[ i ].depth_.image_ );
-					cvSaveImage( (boost::lexical_cast< string >( count ) + ".png" ).c_str(), runtime[ i ].depth_.image_ );
+					if( input == "end" )
+					{
+						continue_flag = false;
+						break;
+					}
+					input_come = false;
 				}
 
+				ofs.flush();
 
 				cout << "hoge" << ++count << endl;
 				int key = ::cvWaitKey( 10 );
 				if ( key == 'q' ) {
 					continue_flag = false;
 				}
-					//モータ制御
-
-
 			}
 		}
 		
+		//スレッドの終了待ち
+		input_wait_thread.join();
+
 		// 終了処理
 		for( auto const & i : runtime )
 		{
 			//set_mortor( 10, * runtime[ 0 ].kinect );
 			i.kinect->NuiShutdown();	
 		}
-		
 
 		::cvDestroyAllWindows();
+
 	}
 	catch ( std::exception & ex ) {
 		std::cout << ex.what() << std::endl;
