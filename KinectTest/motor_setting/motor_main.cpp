@@ -35,8 +35,8 @@ struct Runtime
 
 void set_mortor( long const angle, INuiSensor & kinect )
 {
-	long const max_angle = 30;
-	long const min_angle = -30;		
+	long const max_angle = 27;
+	long const min_angle = -27;		
 	auto const value = std::max( min_angle, std::min( max_angle, angle ) );
 	kinect.NuiCameraElevationSetAngle( value );
 	Sleep( 100 );

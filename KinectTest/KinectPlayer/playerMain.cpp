@@ -36,10 +36,18 @@ struct Runtime
 
 };
 
+
+
 struct graph
 {
-	std::string window_name_;
-	cv::Ptr< IplImage > image_;
+	struct data
+	{
+		std::string window_name_;
+		cv::Ptr< IplImage > image_;
+	};
+
+	data depth_;
+	data color_;
 };
 
 
@@ -61,12 +69,17 @@ void init( std::vector< graph > & graph )
 		//深度==============================================================
 
 		// ウィンドウ名を作成
-		graph[ i ].window_name_ = "MultiKinectPlayer[" + boost::lexical_cast< string >\
+		graph[ i ].depth_.window_name_ = "MultiKinectPlayer[" + boost::lexical_cast< string >\
 			( i + 1 ) + "] Depth";
 
+		graph[ i ].color_.window_name_ = "MultiKinectPlayer[" + boost::lexical_cast< string >\
+			( i + 1 ) + "] Color";
+
 		// OpenCVの初期設定
-		graph[ i ].image_ = ::cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_16U, 1 );
-		::cvNamedWindow( graph[ i ].window_name_.c_str() );
+		graph[ i ].color_.image_ = ::cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_8U, 4 );
+		::cvNamedWindow( graph[ i ].color_.window_name_.c_str() );
+		graph[ i ].depth_.image_ = ::cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_16U, 1 );
+		::cvNamedWindow( graph[ i ].depth_.window_name_.c_str() );
 	}
 }
 
@@ -90,6 +103,7 @@ void draw()
 	using namespace std;
 
 	ifstream ifs( "test.txt", ios::binary );
+	ifstream ifs_color( "color.txt", ios::binary );
 
 	//size_t filesize = ( size_t )ifs.seekg( 0, std::ios::end).tellg();
 
@@ -99,7 +113,7 @@ void draw()
 
 	try {
 
-		std::vector< graph > graph( 3 );
+		std::vector< graph > graph( 4 );
 		
 		bool continue_flag = true;
 		int count = 0;
@@ -116,13 +130,16 @@ void draw()
 
 				// データのコピーと表示
 				
-				ifs.read( graph[ i ].image_->imageData, 640 * 480 * 2 ); 
+				ifs.read( graph[ i ].depth_.image_->imageData, 640 * 480 * 2 ); 
+				ifs_color.read( graph[ i ].color_.image_->imageData, 640 * 480 * 4 ); 
 				
-				Sleep( 7 );
+				Sleep( 30 );
 
 				if( ifs.eof() )
 					continue_flag = false;
-				::cvShowImage( graph[ i ].window_name_.c_str(), graph[ i ].image_ );
+				::cvShowImage( graph[ i ].depth_.window_name_.c_str(), graph[ i ].depth_.image_ );
+				::cvShowImage( graph[ i ].color_.window_name_.c_str(), graph[ i ].color_.image_ );
+
 
 
 				int key = ::cvWaitKey( 10 );

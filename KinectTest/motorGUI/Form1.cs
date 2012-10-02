@@ -20,8 +20,8 @@ namespace motorGUI
         int[] angle = null;
         int kinect_num = 3;
 
-        int max_angle = 30;
-        int min_angle = -30;
+        int max_angle = 27;
+        int min_angle = -27;
 
 
         public Form1()
@@ -72,6 +72,7 @@ namespace motorGUI
             process = new Process();
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardInput = true;
+            process.StartInfo.CreateNoWindow = true;
             //process.StartInfo.RedirectStandardOutput = true;
  
             process.StartInfo.FileName = @"motor_setting.exe";

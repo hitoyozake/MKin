@@ -4,8 +4,10 @@
 #include <vector>
 #include <thread>
 #include <fstream>
+
 #include <boost/optional.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/timer.hpp>
 
 #include <boost/lexical_cast.hpp>
 
@@ -37,8 +39,8 @@ struct Runtime
 
 void set_mortor( long const angle, INuiSensor & kinect )
 {
-	long const max_angle = 30;
-	long const min_angle = -30;		
+	long const max_angle = 27;
+	long const min_angle = -27;		
 	auto const value = std::max( min_angle, std::min( max_angle, angle ) );
 	kinect.NuiCameraElevationSetAngle( value );
 	Sleep( 100 );
@@ -48,7 +50,7 @@ void init( std::vector< Runtime > & runtime )
 {
 	using namespace std;
 	NUI_IMAGE_RESOLUTION const resolution = NUI_IMAGE_RESOLUTION_640x480;
-	
+
 	for( size_t i = 0; i < runtime.size(); ++i )
 	{
 		NuiCreateSensorByIndex( i, & runtime[ i ].kinect );
@@ -59,7 +61,7 @@ void init( std::vector< Runtime > & runtime )
 		runtime[i].depth_.event_ = ::CreateEvent( 0, TRUE, FALSE, 0 );
 
 		//Color=============================================================
-		runtime[i].kinect->NuiImageStreamOpen( NUI_IMAGE_TYPE_COLOR, resolution,
+		runtime[i].kinect->NuiImageStreamOpen( NUI_IMAGE_TYPE_COLOR, NUI_IMAGE_RESOLUTION_640x480,
 			0, 2, runtime[i].color_.image_, &runtime[i].color_.stream_handle_ );
 
 		// ウィンドウ名を作成
@@ -78,7 +80,7 @@ void init( std::vector< Runtime > & runtime )
 		//深度==============================================================
 		runtime[i].kinect->NuiImageStreamOpen( NUI_IMAGE_TYPE_DEPTH, NUI_IMAGE_RESOLUTION_640x480,
 			0, 2, runtime[ i ].depth_.image_, & runtime[ i ].depth_.stream_handle_ );
-
+		::NuiImageResolutionToSize( NUI_IMAGE_RESOLUTION_640x480, x, y );	
 		// ウィンドウ名を作成
 		runtime[ i ].depth_.window_name_ = "MultiKinect[" + boost::lexical_cast< string >\
 			( i + 1 ) + "] Depth";
@@ -120,123 +122,197 @@ void wait_input( bool & input_come, std::string & input )
 	}
 }
 
+void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & ready_sign, std::ofstream & ofs )
+{
+	//go_signをオフにするのはこっち. readyをオフにするのはメイン
+	
+	while( end_sign == 0 )
+	{
+		while( go_sign == 1 )
+		{
+			go_sign = 0; 
+			// データの更新を待つ
+			::WaitForSingleObject( runtime.color_.stream_handle_, 100 );
+			::WaitForSingleObject( runtime.depth_.stream_handle_, 100 );
+
+			// カメラデータの取得
+			NUI_IMAGE_FRAME image_frame_depth_;
+			NUI_IMAGE_FRAME image_frame_color_;
+
+			NUI_IMAGE_FRAME * image_frame_depth = & image_frame_depth_;
+			NUI_IMAGE_FRAME * image_frame_color = & image_frame_color_;
+
+			{
+				auto hRes = runtime.kinect->NuiImageStreamGetNextFrame( runtime.depth_.stream_handle_, 0, image_frame_depth );
+				if( hRes != S_OK ){
+					printf(" ERR: DEPTH次フレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.", hRes);
+					ready_sign = 1;
+					continue;
+				}
+			}
+			{
+				auto hRes = runtime.kinect->NuiImageStreamGetNextFrame( runtime.color_.stream_handle_, 0, image_frame_color );
+				if( hRes != S_OK ){
+					printf(" ERR: COLOR次フレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.", hRes );
+					ready_sign = 1;
+					continue;
+				}
+			}
+			// 画像データの取得
+			if( auto rect = std::move( get_image( image_frame_color_, "COLOR" ) ) )
+			{
+				// データのコピーと表示
+				memcpy( runtime.color_.image_->imageData, (BYTE*)rect->pBits, \
+					runtime.color_.image_->widthStep * runtime.color_.image_->height );
+				::cvShowImage( runtime.color_.window_name_.c_str(), runtime.color_.image_ );
+
+				//color_ofs.write( ( char * )rect->pBits, runtime[ i ].color_.image_->widthStep * runtime[ i ].color_.image_->height );
+
+			}
+			// 画像データの取得
+			if( auto rect = std::move( get_image( image_frame_depth_, "DEPTH" ) ) )
+			{
+				// データのコピーと表示
+				memcpy( runtime.depth_.image_->imageData, (BYTE*)rect->pBits, \
+					runtime.depth_.image_->widthStep * runtime.depth_.image_->height );
+				::cvShowImage( runtime.depth_.window_name_.c_str(), runtime.depth_.image_ );
+				ofs.write( ( char * )rect->pBits, 640 * 480 * 2 );
+			}
+
+			// カメラデータの解放
+			runtime.kinect->NuiImageStreamReleaseFrame( runtime.color_.stream_handle_, image_frame_color );
+			runtime.kinect->NuiImageStreamReleaseFrame( runtime.depth_.stream_handle_, image_frame_depth );
+			ready_sign = 1;
+
+		}
+	}
+	ofs.flush();
+}
+
 
 void draw()
 {
 	using namespace std;
 
 	ofstream ofs( "test.txt",  ios::binary );
-	try {
-		NUI_IMAGE_RESOLUTION const resolution = NUI_IMAGE_RESOLUTION_640x480;
+	ofstream color_ofs( "color.txt", ios::binary );
+	ofstream dlog( "debugLog.txt" );
 
-		// アクティブなKinectの数を取得する
-		int kinectCount = 0;
-		::NuiGetSensorCount( &kinectCount );
+	NUI_IMAGE_RESOLUTION const resolution = NUI_IMAGE_RESOLUTION_640x480;
 
-		// Kinectのインスタンスを生成する
-		typedef std::vector< Runtime > Runtimes;
-		Runtimes runtime( kinectCount );
+	// アクティブなKinectの数を取得する
+	int kinect_count = 0;
+	::NuiGetSensorCount( & kinect_count );
 
-		init( runtime );
+	// Kinectのインスタンスを生成する
+	typedef std::vector< Runtime > Runtimes;
+	Runtimes runtime( kinect_count );
 
-		bool continue_flag = true;
-		int count = 0;
+	init( runtime );
 
-		long now_angle = 0;
+	bool continue_flag = true;
+	int count = 0;
 
-		string input;
-		bool input_come = false;
-		
-		thread input_wait_thread( wait_input, ref( input_come ), ref( input ) );
+	long now_angle = 0;
+	string input;
+	bool input_come = false;
 
-		while ( continue_flag )
+	vector< int > go_sign( kinect_count, 0 );	//スレッド管理用
+	vector< int > ready_sign( kinect_count, 0 );
+	vector< int > end_sign( kinect_count, 0 );
+	thread input_wait_thread( wait_input, ref( input_come ), ref( input ) );
+
+	while ( continue_flag )
+	{
+		boost::timer timer;
+		for( size_t i = 0; i < runtime.size(); ++i )
 		{
-			for( size_t i = 0; i < runtime.size(); ++i )
+			// データの更新を待つ
+			::WaitForSingleObject( runtime[ i ].color_.stream_handle_, 100 );
+			::WaitForSingleObject( runtime[ i ].depth_.stream_handle_, 100 );
+
+			// カメラデータの取得
+			NUI_IMAGE_FRAME image_frame_depth_;
+			NUI_IMAGE_FRAME image_frame_color_;
+
+			NUI_IMAGE_FRAME * image_frame_depth = & image_frame_depth_;
+			NUI_IMAGE_FRAME * image_frame_color = & image_frame_color_;
+
 			{
-				// データの更新を待つ
-				::WaitForSingleObject( runtime[ i ].color_.stream_handle_, 300 );
-				::WaitForSingleObject( runtime[ i ].depth_.stream_handle_, 300 );
-
-				// カメラデータの取得
-				NUI_IMAGE_FRAME image_frame_depth_;
-				NUI_IMAGE_FRAME image_frame_color_;
-
-				NUI_IMAGE_FRAME * image_frame_depth = & image_frame_depth_;
-				NUI_IMAGE_FRAME * image_frame_color = & image_frame_color_;
-
-				{
-					auto hRes = runtime[ i ].kinect->NuiImageStreamGetNextFrame( runtime[ i ].depth_.stream_handle_, 0, image_frame_depth );
-					if( hRes != S_OK ){
-						printf(" ERR: DEPTH次フレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.", hRes);
-						continue;
-					}
-				}
-				{
-					auto hRes = runtime[ i ].kinect->NuiImageStreamGetNextFrame( runtime[ i ].color_.stream_handle_, 0, image_frame_color );
-					if( hRes != S_OK ){
-						printf(" ERR: COLOR次フレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.", hRes );
-						continue;
-					}
-				}
-				// 画像データの取得
-				if( auto rect = std::move( get_image( image_frame_color_, "COLOR" ) ) )
-				{
-					// データのコピーと表示
-					memcpy( runtime[ i ].color_.image_->imageData, (BYTE*)rect->pBits, \
-						runtime[ i ].color_.image_->widthStep * runtime[ i ].color_.image_->height );
-					::cvShowImage( runtime[ i ].color_.window_name_.c_str(), runtime[ i ].color_.image_ );
-				}
-				// 画像データの取得
-				if( auto rect = std::move( get_image( image_frame_depth_, "DEPTH" ) ) )
-				{
-					// データのコピーと表示
-					memcpy( runtime[ i ].depth_.image_->imageData, (BYTE*)rect->pBits, \
-						runtime[ i ].depth_.image_->widthStep * runtime[ i ].depth_.image_->height );
-					::cvShowImage( runtime[ i ].depth_.window_name_.c_str(), runtime[ i ].depth_.image_ );
-					ofs.write( ( char * )rect->pBits, 640 * 480 * 2);
-				}
-
-				// カメラデータの解放
-				runtime[ i ].kinect->NuiImageStreamReleaseFrame( runtime[ i ].color_.stream_handle_, image_frame_color );
-				runtime[ i ].kinect->NuiImageStreamReleaseFrame( runtime[ i ].depth_.stream_handle_, image_frame_depth );
-
-				//終了信号
-				if( input_come )
-				{
-					if( input == "end" )
-					{
-						continue_flag = false;
-						break;
-					}
-					input_come = false;
-				}
-
-				ofs.flush();
-
-				cout << "hoge" << ++count << endl;
-				int key = ::cvWaitKey( 10 );
-				if ( key == 'q' ) {
-					continue_flag = false;
+				auto hRes = runtime[ i ].kinect->NuiImageStreamGetNextFrame( runtime[ i ].depth_.stream_handle_, 0, image_frame_depth );
+				if( hRes != S_OK ){
+					printf(" ERR: DEPTH次フレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.", hRes);
+					continue;
 				}
 			}
+			{
+				auto hRes = runtime[ i ].kinect->NuiImageStreamGetNextFrame( runtime[ i ].color_.stream_handle_, 0, image_frame_color );
+				if( hRes != S_OK ){
+					printf(" ERR: COLOR次フレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.", hRes );
+					continue;
+				}
+			}
+			// 画像データの取得
+			if( auto rect = std::move( get_image( image_frame_color_, "COLOR" ) ) )
+			{
+				// データのコピーと表示
+				memcpy( runtime[ i ].color_.image_->imageData, (BYTE*)rect->pBits, \
+					runtime[ i ].color_.image_->widthStep * runtime[ i ].color_.image_->height );
+				::cvShowImage( runtime[ i ].color_.window_name_.c_str(), runtime[ i ].color_.image_ );
+
+				//color_ofs.write( ( char * )rect->pBits, runtime[ i ].color_.image_->widthStep * runtime[ i ].color_.image_->height );
+
+			}
+			// 画像データの取得
+			if( auto rect = std::move( get_image( image_frame_depth_, "DEPTH" ) ) )
+			{
+				// データのコピーと表示
+				memcpy( runtime[ i ].depth_.image_->imageData, (BYTE*)rect->pBits, \
+					runtime[ i ].depth_.image_->widthStep * runtime[ i ].depth_.image_->height );
+				::cvShowImage( runtime[ i ].depth_.window_name_.c_str(), runtime[ i ].depth_.image_ );
+				ofs.write( ( char * )rect->pBits, 640 * 480 * 2 );
+				if( i == 2 )
+					ofs.write( ( char * )rect->pBits, 640 * 480 * 2 );
+			}
+
+			// カメラデータの解放
+			runtime[ i ].kinect->NuiImageStreamReleaseFrame( runtime[ i ].color_.stream_handle_, image_frame_color );
+			runtime[ i ].kinect->NuiImageStreamReleaseFrame( runtime[ i ].depth_.stream_handle_, image_frame_depth );
+
+			//終了信号
+			if( input_come )
+			{
+				if( input == "end" )
+				{
+					continue_flag = false;
+					break;
+				}
+				input_come = false;
+			}
+
+			ofs.flush();
+			color_ofs.flush();
+
+			//cout << "hoge" << ++count << endl;
+			int key = ::cvWaitKey( 10 );
+			if ( key == 'q' ) {
+				continue_flag = false;
+			}
 		}
-		
-		//スレッドの終了待ち
-		input_wait_thread.join();
-
-		// 終了処理
-		for( auto const & i : runtime )
-		{
-			//set_mortor( 10, * runtime[ 0 ].kinect );
-			i.kinect->NuiShutdown();	
-		}
-
-		::cvDestroyAllWindows();
-
+		dlog << timer.elapsed() << endl; 
 	}
-	catch ( std::exception & ex ) {
-		std::cout << ex.what() << std::endl;
+	//スレッドの終了待ち
+	input_wait_thread.join();
+
+	// 終了処理
+	for( auto const & i : runtime )
+	{
+		//set_mortor( 10, * runtime[ 0 ].kinect );
+		i.kinect->NuiShutdown();	
 	}
+	//Windowを閉じる
+	::cvDestroyAllWindows();
+
 }
 
 int main()
