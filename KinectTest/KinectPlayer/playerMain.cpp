@@ -101,8 +101,8 @@ void wait_input( bool & input_come, std::string & input )
 void draw()
 {
 	using namespace std;
-
-	ifstream ifs( "test.txt", ios::binary );
+	int const kinect_count = 3;
+	vector< ifstream >  ifs_depth( kinect_count );
 	ifstream ifs_color( "color.txt", ios::binary );
 
 	//size_t filesize = ( size_t )ifs.seekg( 0, std::ios::end).tellg();
@@ -111,9 +111,17 @@ void draw()
 
 	//std::cout << "size:" << filesize << std::endl;
 
+	for( int i = 0; i < ifs_depth.size(); ++i )
+	{
+		auto const filename = string( "depth_" ) + boost::lexical_cast< string >\
+			( i ) + ".txt";
+
+		ifs_depth[ i ].open( filename, ios::binary );
+	}
+
 	try {
 
-		std::vector< graph > graph( 4 );
+		std::vector< graph > graph( 3 );
 		
 		bool continue_flag = true;
 		int count = 0;
@@ -130,15 +138,15 @@ void draw()
 
 				// データのコピーと表示
 				
-				ifs.read( graph[ i ].depth_.image_->imageData, 640 * 480 * 2 ); 
-				ifs_color.read( graph[ i ].color_.image_->imageData, 640 * 480 * 4 ); 
+				ifs_depth[ i ].read( graph[ i ].depth_.image_->imageData, 640 * 480 * 2 ); 
+				//ifs_color.read( graph[ i ].color_.image_->imageData, 640 * 480 * 4 ); 
 				
 				Sleep( 30 );
 
-				if( ifs.eof() )
+				if( ifs_depth[ i ].eof() )
 					continue_flag = false;
 				::cvShowImage( graph[ i ].depth_.window_name_.c_str(), graph[ i ].depth_.image_ );
-				::cvShowImage( graph[ i ].color_.window_name_.c_str(), graph[ i ].color_.image_ );
+				//::cvShowImage( graph[ i ].color_.window_name_.c_str(), graph[ i ].color_.image_ );
 
 
 

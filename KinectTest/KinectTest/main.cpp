@@ -185,8 +185,17 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 			ready_sign = 1;
 
 		}
+		Sleep( 2 );
 	}
 	ofs.flush();
+}
+
+void end_task( vector< int > & end_sign, vector< thread > & kinect_thread_obj )
+{
+	for( auto & it : end_sign )
+		it = 1;
+	for( auto & it : kinect_thread_obj )
+		it.join();
 }
 
 
@@ -194,7 +203,6 @@ void draw()
 {
 	using namespace std;
 
-	ofstream ofs( "test.txt",  ios::binary );
 	ofstream color_ofs( "color.txt", ios::binary );
 	ofstream dlog( "debugLog.txt" );
 
@@ -220,87 +228,69 @@ void draw()
 	vector< int > go_sign( kinect_count, 0 );	//スレッド管理用
 	vector< int > ready_sign( kinect_count, 0 );
 	vector< int > end_sign( kinect_count, 0 );
+	vector< ofstream > ofs( kinect_count );
 	thread input_wait_thread( wait_input, ref( input_come ), ref( input ) );
+	vector< thread > kinect_thread_obj( kinect_count );
 
+	for( int i = 0; i < kinect_count; ++i )
+	{
+		string const filename = string( "depth_" ) + boost::lexical_cast< string >\
+			( i ) + ".txt";
+		ofs[ i ].open( filename, ios::binary );
+
+		kinect_thread_obj[ i ] = thread( kinect_thread, \
+			ref( runtime[ i ] ), ref( go_sign[ i ] ),ref( end_sign[ i ] ), \
+			ref( ready_sign[ i ] ), ref( ofs[ i ] ) );
+	}
+
+	//開始 ->find_ifで書き換え可能コード
+	for( auto & i : go_sign )
+		i = 1;
+
+	boost::timer timer;
 	while ( continue_flag )
 	{
-		boost::timer timer;
-		for( size_t i = 0; i < runtime.size(); ++i )
+		int flag = 1;
+
+		for( auto const i : ready_sign )
 		{
-			// データの更新を待つ
-			::WaitForSingleObject( runtime[ i ].color_.stream_handle_, 100 );
-			::WaitForSingleObject( runtime[ i ].depth_.stream_handle_, 100 );
-
-			// カメラデータの取得
-			NUI_IMAGE_FRAME image_frame_depth_;
-			NUI_IMAGE_FRAME image_frame_color_;
-
-			NUI_IMAGE_FRAME * image_frame_depth = & image_frame_depth_;
-			NUI_IMAGE_FRAME * image_frame_color = & image_frame_color_;
-
-			{
-				auto hRes = runtime[ i ].kinect->NuiImageStreamGetNextFrame( runtime[ i ].depth_.stream_handle_, 0, image_frame_depth );
-				if( hRes != S_OK ){
-					printf(" ERR: DEPTH次フレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.", hRes);
-					continue;
-				}
-			}
-			{
-				auto hRes = runtime[ i ].kinect->NuiImageStreamGetNextFrame( runtime[ i ].color_.stream_handle_, 0, image_frame_color );
-				if( hRes != S_OK ){
-					printf(" ERR: COLOR次フレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.", hRes );
-					continue;
-				}
-			}
-			// 画像データの取得
-			if( auto rect = std::move( get_image( image_frame_color_, "COLOR" ) ) )
-			{
-				// データのコピーと表示
-				memcpy( runtime[ i ].color_.image_->imageData, (BYTE*)rect->pBits, \
-					runtime[ i ].color_.image_->widthStep * runtime[ i ].color_.image_->height );
-				::cvShowImage( runtime[ i ].color_.window_name_.c_str(), runtime[ i ].color_.image_ );
-
-				//color_ofs.write( ( char * )rect->pBits, runtime[ i ].color_.image_->widthStep * runtime[ i ].color_.image_->height );
-
-			}
-			// 画像データの取得
-			if( auto rect = std::move( get_image( image_frame_depth_, "DEPTH" ) ) )
-			{
-				// データのコピーと表示
-				memcpy( runtime[ i ].depth_.image_->imageData, (BYTE*)rect->pBits, \
-					runtime[ i ].depth_.image_->widthStep * runtime[ i ].depth_.image_->height );
-				::cvShowImage( runtime[ i ].depth_.window_name_.c_str(), runtime[ i ].depth_.image_ );
-				ofs.write( ( char * )rect->pBits, 640 * 480 * 2 );
-				if( i == 2 )
-					ofs.write( ( char * )rect->pBits, 640 * 480 * 2 );
-			}
-
-			// カメラデータの解放
-			runtime[ i ].kinect->NuiImageStreamReleaseFrame( runtime[ i ].color_.stream_handle_, image_frame_color );
-			runtime[ i ].kinect->NuiImageStreamReleaseFrame( runtime[ i ].depth_.stream_handle_, image_frame_depth );
-
-			//終了信号
-			if( input_come )
-			{
-				if( input == "end" )
-				{
-					continue_flag = false;
-					break;
-				}
-				input_come = false;
-			}
-
-			ofs.flush();
-			color_ofs.flush();
-
-			//cout << "hoge" << ++count << endl;
-			int key = ::cvWaitKey( 10 );
-			if ( key == 'q' ) {
-				continue_flag = false;
-			}
+			flag = flag & i;
 		}
-		dlog << timer.elapsed() << endl; 
+
+		if( flag == 1 )
+		{
+			dlog << timer.elapsed() << endl;
+			timer.restart();
+			//全部待機済みなので、次のフレーム
+			for( auto & i : ready_sign )
+				i = 0;
+			for( auto & i : go_sign )
+				i = 1;
+			Sleep( 18 );
+		}
+
+		//終了信号
+		if( input_come )
+		{
+			if( input == "end" )
+			{
+				continue_flag = false;
+				break;
+			}
+			input_come = false;
+		}
+
+		color_ofs.flush();
+
+		//cout << "hoge" << ++count << endl;
+		int key = ::cvWaitKey( 10 );
+		if ( key == 'q' ) {
+			continue_flag = false;
+		}
 	}
+
+	timer.elapsed();
+	end_task( end_sign, kinect_thread_obj );
 	//スレッドの終了待ち
 	input_wait_thread.join();
 
