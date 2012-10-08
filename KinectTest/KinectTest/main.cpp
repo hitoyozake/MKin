@@ -126,10 +126,14 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 {
 	//go_signをオフにするのはこっち. readyをオフにするのはメイン
 	
+	int count = 0;
+
 	while( end_sign == 0 )
 	{
 		while( go_sign == 1 )
 		{
+			++count;
+
 			go_sign = 0; 
 			// データの更新を待つ
 			::WaitForSingleObject( runtime.color_.stream_handle_, 100 );
@@ -145,7 +149,7 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 			{
 				auto hRes = runtime.kinect->NuiImageStreamGetNextFrame( runtime.depth_.stream_handle_, 0, image_frame_depth );
 				if( hRes != S_OK ){
-					printf(" ERR: DEPTH次フレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.", hRes);
+					printf(" ERR: DEPTH次%dフレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.\n", count, hRes);
 					ready_sign = 1;
 					continue;
 				}
@@ -153,7 +157,7 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 			{
 				auto hRes = runtime.kinect->NuiImageStreamGetNextFrame( runtime.color_.stream_handle_, 0, image_frame_color );
 				if( hRes != S_OK ){
-					printf(" ERR: COLOR次フレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.", hRes );
+					printf(" ERR: COLOR次%dフレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.\n", count, hRes );
 					ready_sign = 1;
 					continue;
 				}
@@ -162,7 +166,7 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 			if( auto rect = std::move( get_image( image_frame_color_, "COLOR" ) ) )
 			{
 				// データのコピーと表示
-				memcpy( runtime.color_.image_->imageData, (BYTE*)rect->pBits, \
+				memcpy( runtime.color_.image_->0im01a411011111geData, (BYTE*)rect->pBits, \
 					runtime.color_.image_->widthStep * runtime.color_.image_->height );
 				::cvShowImage( runtime.color_.window_name_.c_str(), runtime.color_.image_ );
 
@@ -185,7 +189,7 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 			ready_sign = 1;
 
 		}
-		Sleep( 2 );
+		Sleep( 3 );
 	}
 	ofs.flush();
 }
@@ -266,7 +270,7 @@ void draw()
 				i = 0;
 			for( auto & i : go_sign )
 				i = 1;
-			Sleep( 18 );
+			Sleep( 20 );
 		}
 
 		//終了信号

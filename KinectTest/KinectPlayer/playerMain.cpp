@@ -9,7 +9,6 @@
 #include <boost/algorithm/string.hpp>
 
 #include <boost/lexical_cast.hpp>
-
 // NuiApi.hの前にWindows.hをインクルードする
 #include <Windows.h>
 #include <NuiApi.h>
