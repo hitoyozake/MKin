@@ -35,6 +35,8 @@ struct Runtime
 	image_data color_;
 	image_data depth_;
 
+	int id_;
+
 };
 
 void set_mortor( long const angle, INuiSensor & kinect )
@@ -127,6 +129,7 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 	//go_signをオフにするのはこっち. readyをオフにするのはメイン
 	
 	int count = 0;
+	char prev_frame[ 640 * 480 ];
 
 	while( end_sign == 0 )
 	{
@@ -149,7 +152,7 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 			{
 				auto hRes = runtime.kinect->NuiImageStreamGetNextFrame( runtime.depth_.stream_handle_, 0, image_frame_depth );
 				if( hRes != S_OK ){
-					printf(" ERR: DEPTH次%dフレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.\n", count, hRes);
+					printf(" ERR: [%d]DEPTH%dフレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.\n", runtime.id_, count, hRes);
 					ready_sign = 1;
 					continue;
 				}
@@ -157,7 +160,7 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 			{
 				auto hRes = runtime.kinect->NuiImageStreamGetNextFrame( runtime.color_.stream_handle_, 0, image_frame_color );
 				if( hRes != S_OK ){
-					printf(" ERR: COLOR次%dフレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.\n", count, hRes );
+					printf(" ERR: [%d]COLOR%dフレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.\n", runtime.id_, count, hRes );
 					ready_sign = 1;
 					continue;
 				}
@@ -166,7 +169,7 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 			if( auto rect = std::move( get_image( image_frame_color_, "COLOR" ) ) )
 			{
 				// データのコピーと表示
-				memcpy( runtime.color_.image_->0im01a411011111geData, (BYTE*)rect->pBits, \
+				memcpy( runtime.color_.image_->imageData, (BYTE*)rect->pBits, \
 					runtime.color_.image_->widthStep * runtime.color_.image_->height );
 				::cvShowImage( runtime.color_.window_name_.c_str(), runtime.color_.image_ );
 
@@ -241,6 +244,8 @@ void draw()
 		string const filename = string( "depth_" ) + boost::lexical_cast< string >\
 			( i ) + ".txt";
 		ofs[ i ].open( filename, ios::binary );
+
+		runtime[ i ].id_ = i;
 
 		kinect_thread_obj[ i ] = thread( kinect_thread, \
 			ref( runtime[ i ] ), ref( go_sign[ i ] ),ref( end_sign[ i ] ), \
