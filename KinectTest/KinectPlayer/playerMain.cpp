@@ -90,6 +90,7 @@ void wait_input( bool & input_come, std::string & input )
 	{
 		if( ! input_come )
 		{
+		
 			std::cin >> input;
 			input_come = true;
 			Sleep( 300 );
