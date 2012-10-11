@@ -22,7 +22,7 @@
 
 struct Runtime
 {
-	INuiSensor *        kinect;         // Kinectのインスタンス
+	INuiSensor * kinect_;         // Kinectのインスタンス
 
 	struct image_data
 	{
@@ -55,15 +55,15 @@ void init( std::vector< Runtime > & runtime )
 
 	for( size_t i = 0; i < runtime.size(); ++i )
 	{
-		NuiCreateSensorByIndex( i, & runtime[ i ].kinect );
+		NuiCreateSensorByIndex( i, & runtime[ i ].kinect_ );
 
-		runtime[i].kinect->NuiInitialize( NUI_INITIALIZE_FLAG_USES_COLOR | NUI_INITIALIZE_FLAG_USES_DEPTH );
+		runtime[i].kinect_->NuiInitialize( NUI_INITIALIZE_FLAG_USES_COLOR | NUI_INITIALIZE_FLAG_USES_DEPTH );
 
 		runtime[i].color_.event_ = ::CreateEvent( 0, TRUE, FALSE, 0 );
 		runtime[i].depth_.event_ = ::CreateEvent( 0, TRUE, FALSE, 0 );
 
 		//Color=============================================================
-		runtime[i].kinect->NuiImageStreamOpen( NUI_IMAGE_TYPE_COLOR, NUI_IMAGE_RESOLUTION_640x480,
+		runtime[i].kinect_->NuiImageStreamOpen( NUI_IMAGE_TYPE_COLOR, NUI_IMAGE_RESOLUTION_640x480,
 			0, 2, runtime[i].color_.image_, &runtime[i].color_.stream_handle_ );
 
 		// ウィンドウ名を作成
@@ -80,7 +80,7 @@ void init( std::vector< Runtime > & runtime )
 
 
 		//深度==============================================================
-		runtime[i].kinect->NuiImageStreamOpen( NUI_IMAGE_TYPE_DEPTH, NUI_IMAGE_RESOLUTION_640x480,
+		runtime[i].kinect_->NuiImageStreamOpen( NUI_IMAGE_TYPE_DEPTH, NUI_IMAGE_RESOLUTION_640x480,
 			0, 2, runtime[ i ].depth_.image_, & runtime[ i ].depth_.stream_handle_ );
 		::NuiImageResolutionToSize( NUI_IMAGE_RESOLUTION_640x480, x, y );	
 		// ウィンドウ名を作成
@@ -150,7 +150,7 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 			NUI_IMAGE_FRAME * image_frame_color = & image_frame_color_;
 
 			{
-				auto hRes = runtime.kinect->NuiImageStreamGetNextFrame( runtime.depth_.stream_handle_, 0, image_frame_depth );
+				auto hRes = runtime.kinect_->NuiImageStreamGetNextFrame( runtime.depth_.stream_handle_, 0, image_frame_depth );
 				if( hRes != S_OK ){
 					printf(" ERR: [%d]DEPTH%dフレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.\n", runtime.id_, count, hRes);
 					ready_sign = 1;
@@ -158,7 +158,7 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 				}
 			}
 			{
-				auto hRes = runtime.kinect->NuiImageStreamGetNextFrame( runtime.color_.stream_handle_, 0, image_frame_color );
+				auto hRes = runtime.kinect_->NuiImageStreamGetNextFrame( runtime.color_.stream_handle_, 0, image_frame_color );
 				if( hRes != S_OK ){
 					printf(" ERR: [%d]COLOR%dフレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.\n", runtime.id_, count, hRes );
 					ready_sign = 1;
@@ -187,8 +187,8 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 			}
 
 			// カメラデータの解放
-			runtime.kinect->NuiImageStreamReleaseFrame( runtime.color_.stream_handle_, image_frame_color );
-			runtime.kinect->NuiImageStreamReleaseFrame( runtime.depth_.stream_handle_, image_frame_depth );
+			runtime.kinect_->NuiImageStreamReleaseFrame( runtime.color_.stream_handle_, image_frame_color );
+			runtime.kinect_->NuiImageStreamReleaseFrame( runtime.depth_.stream_handle_, image_frame_depth );
 			ready_sign = 1;
 
 		}
@@ -307,7 +307,7 @@ void draw()
 	for( auto const & i : runtime )
 	{
 		//set_mortor( 10, * runtime[ 0 ].kinect );
-		i.kinect->NuiShutdown();	
+		i.kinect_->NuiShutdown();	
 	}
 	//Windowを閉じる
 	::cvDestroyAllWindows();
