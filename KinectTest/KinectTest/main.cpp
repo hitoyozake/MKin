@@ -1,9 +1,10 @@
 // 複数のKinectのカメラ画像を表示する
 #include <iostream>
-#include <sstream>
+#include <string>
 #include <vector>
 #include <thread>
 #include <fstream>
+#include <boost\shared_ptr.hpp>
 
 #include <boost/optional.hpp>
 #include <boost/algorithm/string.hpp>
@@ -35,8 +36,10 @@ struct Runtime
 	image_data color_;
 	image_data depth_;
 
-	int id_;
+	boost::shared_ptr< std::ofstream > ofs_d_;
+	boost::shared_ptr< std::ofstream > ofs_c_;
 
+	int id_;
 };
 
 void set_mortor( long const angle, INuiSensor & kinect )
@@ -80,15 +83,15 @@ void init( std::vector< Runtime > & runtime )
 
 
 		//深度==============================================================
-		runtime[i].kinect_->NuiImageStreamOpen( NUI_IMAGE_TYPE_DEPTH, NUI_IMAGE_RESOLUTION_640x480,
+		::NuiImageResolutionToSize( NUI_IMAGE_RESOLUTION_320x240, x, y );	
+
+		runtime[i].kinect_->NuiImageStreamOpen( NUI_IMAGE_TYPE_DEPTH, NUI_IMAGE_RESOLUTION_320x240,
 			0, 2, runtime[ i ].depth_.image_, & runtime[ i ].depth_.stream_handle_ );
-		::NuiImageResolutionToSize( NUI_IMAGE_RESOLUTION_640x480, x, y );	
 		// ウィンドウ名を作成
 		runtime[ i ].depth_.window_name_ = "MultiKinect[" + boost::lexical_cast< string >\
 			( i + 1 ) + "] Depth";
 
 		// 画面サイズを取得
-		::NuiImageResolutionToSize( NUI_IMAGE_RESOLUTION_640x480, x, y );			
 
 		// OpenCVの初期設定
 		runtime[i].depth_.image_ = ::cvCreateImage( cvSize( x, y ), IPL_DEPTH_16U, 1 );
@@ -124,7 +127,7 @@ void wait_input( bool & input_come, std::string & input )
 	}
 }
 
-void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & ready_sign, std::ofstream & ofs )
+void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & ready_sign )
 {
 	//go_signをオフにするのはこっち. readyをオフにするのはメイン
 	
@@ -172,9 +175,8 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 				memcpy( runtime.color_.image_->imageData, (BYTE*)rect->pBits, \
 					runtime.color_.image_->widthStep * runtime.color_.image_->height );
 				::cvShowImage( runtime.color_.window_name_.c_str(), runtime.color_.image_ );
-
-				//color_ofs.write( ( char * )rect->pBits, runtime[ i ].color_.image_->widthStep * runtime[ i ].color_.image_->height );
-
+				runtime.ofs_c_->write\
+				( ( char * )rect->pBits, runtime.color_.image_->widthStep * runtime.color_.image_->height );
 			}
 			// 画像データの取得
 			if( auto rect = std::move( get_image( image_frame_depth_, "DEPTH" ) ) )
@@ -183,7 +185,7 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 				memcpy( runtime.depth_.image_->imageData, (BYTE*)rect->pBits, \
 					runtime.depth_.image_->widthStep * runtime.depth_.image_->height );
 				::cvShowImage( runtime.depth_.window_name_.c_str(), runtime.depth_.image_ );
-				ofs.write( ( char * )rect->pBits, 640 * 480 * 2 );
+				runtime.ofs_d_->write( ( char * )rect->pBits, runtime.depth_.image_->widthStep * runtime.depth_.image_->height );
 			}
 
 			// カメラデータの解放
@@ -194,7 +196,6 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 		}
 		Sleep( 3 );
 	}
-	ofs.flush();
 }
 
 void end_task( vector< int > & end_sign, vector< thread > & kinect_thread_obj )
@@ -210,7 +211,6 @@ void draw()
 {
 	using namespace std;
 
-	ofstream color_ofs( "color.txt", ios::binary );
 	ofstream dlog( "debugLog.txt" );
 
 	NUI_IMAGE_RESOLUTION const resolution = NUI_IMAGE_RESOLUTION_640x480;
@@ -222,7 +222,7 @@ void draw()
 	// Kinectのインスタンスを生成する
 	typedef std::vector< Runtime > Runtimes;
 	Runtimes runtime( kinect_count );
-
+	//runtime.push_back( Runtime() );
 	init( runtime );
 
 	bool continue_flag = true;
@@ -235,21 +235,28 @@ void draw()
 	vector< int > go_sign( kinect_count, 0 );	//スレッド管理用
 	vector< int > ready_sign( kinect_count, 0 );
 	vector< int > end_sign( kinect_count, 0 );
-	vector< ofstream > ofs( kinect_count );
+	
 	thread input_wait_thread( wait_input, ref( input_come ), ref( input ) );
 	vector< thread > kinect_thread_obj( kinect_count );
 
 	for( int i = 0; i < kinect_count; ++i )
 	{
-		string const filename = string( "depth_" ) + boost::lexical_cast< string >\
+		string const filename_d = string( "depth_" ) + boost::lexical_cast< string >\
 			( i ) + ".txt";
-		ofs[ i ].open( filename, ios::binary );
+		string const filename_c = string( "color_" ) + boost::lexical_cast< string >\
+			( i ) + ".txt";
+
+		runtime[ i ].ofs_c_ = boost::shared_ptr< ofstream >( new ofstream() );
+		runtime[ i ].ofs_d_ = boost::shared_ptr< ofstream >( new ofstream() );
+
+		runtime[ i ].ofs_d_->open( filename_d, ios::binary );
+		runtime[ i ].ofs_c_->open( filename_c, ios::binary );
 
 		runtime[ i ].id_ = i;
 
 		kinect_thread_obj[ i ] = thread( kinect_thread, \
 			ref( runtime[ i ] ), ref( go_sign[ i ] ),ref( end_sign[ i ] ), \
-			ref( ready_sign[ i ] ), ref( ofs[ i ] ) );
+			ref( ready_sign[ i ] ) );
 	}
 
 	//開始 ->find_ifで書き換え可能コード
@@ -289,7 +296,7 @@ void draw()
 			input_come = false;
 		}
 
-		color_ofs.flush();
+		
 
 		//cout << "hoge" << ++count << endl;
 		int key = ::cvWaitKey( 10 );

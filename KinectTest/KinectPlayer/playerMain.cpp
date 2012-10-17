@@ -1,6 +1,6 @@
 // 複数のKinectのカメラ画像を表示する
 #include <iostream>
-#include <sstream>
+#include <string>
 #include <vector>
 #include <thread>
 
@@ -18,6 +18,8 @@
 
 #define NO_MINMAX
 
+int const KINECT_NUM = 1;
+
 struct Runtime
 {
 	INuiSensor *        kinect;         // Kinectのインスタンス
@@ -32,7 +34,6 @@ struct Runtime
 
 	image_data color_;
 	image_data depth_;
-
 };
 
 
@@ -47,6 +48,8 @@ struct graph
 
 	data depth_;
 	data color_;
+	
+	std::string filename_;
 };
 
 
@@ -73,11 +76,14 @@ void init( std::vector< graph > & graph )
 
 		graph[ i ].color_.window_name_ = "MultiKinectPlayer[" + boost::lexical_cast< string >\
 			( i + 1 ) + "] Color";
+		graph[ i ].filename_ = string( "depth_" ) + boost::lexical_cast< string >\
+			( i ) + ".txt";
+
 
 		// OpenCVの初期設定
 		graph[ i ].color_.image_ = ::cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_8U, 4 );
 		::cvNamedWindow( graph[ i ].color_.window_name_.c_str() );
-		graph[ i ].depth_.image_ = ::cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_16U, 1 );
+		graph[ i ].depth_.image_ = ::cvCreateImage( cvSize( 320, 240 ), IPL_DEPTH_16U, 1 );
 		::cvNamedWindow( graph[ i ].depth_.window_name_.c_str() );
 	}
 }
@@ -101,10 +107,10 @@ void wait_input( bool & input_come, std::string & input )
 void draw()
 {
 	using namespace std;
-	int const kinect_count = 3;
+	int const kinect_count = 1;
 	vector< ifstream >  ifs_depth( kinect_count );
-	ifstream ifs_color( "color.txt", ios::binary );
-
+	vector< ifstream >  ifs_color( kinect_count );
+	
 	//size_t filesize = ( size_t )ifs.seekg( 0, std::ios::end).tellg();
 
 	//ifs.seekg( 0, std::ios::beg );
@@ -113,15 +119,18 @@ void draw()
 
 	for( int i = 0; i < ifs_depth.size(); ++i )
 	{
-		auto const filename = string( "depth_" ) + boost::lexical_cast< string >\
+		auto const filename_d = string( "depth_" ) + boost::lexical_cast< string >\
+			( i ) + ".txt";
+		auto const filename_c = string( "color_" ) + boost::lexical_cast< string >\
 			( i ) + ".txt";
 
-		ifs_depth[ i ].open( filename, ios::binary );
+		ifs_depth[ i ].open( filename_d, ios::binary );
+		ifs_color[ i ].open( filename_c, ios::binary );
 	}
 
 	try {
 
-		std::vector< graph > graph( 3 );
+		std::vector< graph > graph( KINECT_NUM );
 		
 		bool continue_flag = true;
 		int count = 0;
@@ -138,17 +147,15 @@ void draw()
 
 				// データのコピーと表示
 				
-				ifs_depth[ i ].read( graph[ i ].depth_.image_->imageData, 640 * 480 * 2 ); 
-				//ifs_color.read( graph[ i ].color_.image_->imageData, 640 * 480 * 4 ); 
+				ifs_depth[ i ].read( graph[ i ].depth_.image_->imageData, 320 * 240 * 2 ); 
+				ifs_color[ i ].read( graph[ i ].color_.image_->imageData, 640 * 480 * 4 ); 
 				
 				Sleep( 30 );
 
 				if( ifs_depth[ i ].eof() )
 					continue_flag = false;
 				::cvShowImage( graph[ i ].depth_.window_name_.c_str(), graph[ i ].depth_.image_ );
-				//::cvShowImage( graph[ i ].color_.window_name_.c_str(), graph[ i ].color_.image_ );
-
-
+				::cvShowImage( graph[ i ].color_.window_name_.c_str(), graph[ i ].color_.image_ );
 
 				int key = ::cvWaitKey( 10 );
 				if ( key == 'q' ) {
