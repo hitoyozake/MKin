@@ -20,6 +20,52 @@
 
 int const KINECT_NUM = 1;
 
+struct mouse_info
+{
+	int x1_, x2_, y1_, y2_;
+	int flag_;
+
+	mouse_info() : x1_( 0 ), x2_( 320 ), y1_( 0 ), y2_( 240 )
+	{
+	}
+};
+
+void on_mouse( int event, int x, int y, int flags, void *param )
+{
+	auto mouse = static_cast< mouse_info * >( param );
+   switch(event){
+   case CV_EVENT_MOUSEMOVE:
+      break;
+   case CV_EVENT_LBUTTONDOWN:
+	   cout << "hello" << endl;
+	   mouse->flag_ = false;
+	   mouse->x1_ = x;
+	   mouse->y1_ = y;
+	// When Left button is pressed, ...
+	break;
+	  
+   case CV_EVENT_LBUTTONUP:
+	   mouse->x2_ = x;
+	   mouse->y2_ = y;
+	   cout << "hellohellohello" << endl;
+
+	   mouse->flag_ = true;
+	// When Left button is released, ...
+       break;
+
+   case CV_EVENT_RBUTTONDOWN:
+	
+       break;
+	  
+   case CV_EVENT_RBUTTONUP:
+
+	break;
+
+   default:
+	break;
+   }
+}
+
 struct Runtime
 {
 	INuiSensor *        kinect;         // Kinectのインスタンス
@@ -82,9 +128,9 @@ void init( std::vector< graph > & graph )
 
 		// OpenCVの初期設定
 		graph[ i ].color_.image_ = ::cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_8U, 4 );
-		::cvNamedWindow( graph[ i ].color_.window_name_.c_str() );
-		graph[ i ].depth_.image_ = ::cvCreateImage( cvSize( 320, 240 ), IPL_DEPTH_16U, 1 );
-		::cvNamedWindow( graph[ i ].depth_.window_name_.c_str() );
+		::cvNamedWindow( graph[ i ].color_.window_name_.c_str(), CV_WINDOW_KEEPRATIO );
+		graph[ i ].depth_.image_ = ::cvCreateImage( cvSize( 320, 240 ), IPL_DEPTH_16U, 1  );
+		::cvNamedWindow( graph[ i ].depth_.window_name_.c_str(), CV_WINDOW_KEEPRATIO );
 	}
 }
 
@@ -95,7 +141,6 @@ void wait_input( bool & input_come, std::string & input )
 	{
 		if( ! input_come )
 		{
-		
 			std::cin >> input;
 			input_come = true;
 			Sleep( 300 );
@@ -110,7 +155,7 @@ void draw()
 	int const kinect_count = 1;
 	vector< ifstream >  ifs_depth( kinect_count );
 	vector< ifstream >  ifs_color( kinect_count );
-	
+	mouse_info mouse;
 	//size_t filesize = ( size_t )ifs.seekg( 0, std::ios::end).tellg();
 
 	//ifs.seekg( 0, std::ios::beg );
@@ -139,8 +184,21 @@ void draw()
 
 		init( graph );
 
+		int x1 = 0, x2 = 150, y1 = 140, y2 = 240;
+
 		while ( continue_flag )
 		{
+			if( mouse.flag_ )
+			{
+				mouse.flag_ = 0;
+				x1 = max( 0, min( mouse.x1_ , mouse.x2_ ) );
+				x2 = min( 320, max( mouse.x1_ , mouse.x2_ ) );
+				y1 = max( 0, min( mouse.y1_ , mouse.y2_ ) );
+				y2 = min( 240, max( mouse.y1_ , mouse.y2_ ) );
+			}
+
+			cvSetMouseCallback( "MultiKinectPlayer[1] Depth", on_mouse, & mouse );
+
 			for( size_t i = 0; i < graph.size(); ++i )
 			{
 				// 画像データの取得
@@ -154,15 +212,52 @@ void draw()
 
 				if( ifs_depth[ i ].eof() )
 					continue_flag = false;
+
+				unsigned short max_value = 15, min_value = 655300;
+
+				for( int h = y1; h < y2; ++h )
+				{
+					for( int w = x1; w < x2; ++w )
+					{
+						unsigned short pixel = ( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
+							 graph[ i ].depth_.image_->widthStep * h ) )[ w ];
+						//cout << pixel << endl;
+
+						max_value = max( pixel, max_value );
+						if( pixel > 10 )
+							min_value = min( pixel, min_value );
+					}
+				}
+
+
+
+				for( int h = y1; h < y2; ++h )
+				{
+					for( int w = x1; w < x2; ++w )
+					{
+						( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
+							 graph[ i ].depth_.image_->widthStep * h ) )[ w ] -= min_value;
+
+						//代入
+						( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
+							 graph[ i ].depth_.image_->widthStep * h ) )[ w ] = 
+						 ( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
+							 graph[ i ].depth_.image_->widthStep * h ) )[ w ] * 65530.0
+						 / ( max_value - min_value );
+					}
+				}
+
 				::cvShowImage( graph[ i ].depth_.window_name_.c_str(), graph[ i ].depth_.image_ );
 				::cvShowImage( graph[ i ].color_.window_name_.c_str(), graph[ i ].color_.image_ );
+
+				//選択領域から最大のものと最小の画素を選んでその値で割る? 3000 - 3500 x / 3500
 
 				int key = ::cvWaitKey( 10 );
 				if ( key == 'q' ) {
 					continue_flag = false;
 				}
 			}
-			cout << "hoge" << ++count << endl;
+			cout << "frame : " << ++count << endl;
 
 		}
 		
