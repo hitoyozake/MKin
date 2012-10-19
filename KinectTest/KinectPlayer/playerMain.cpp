@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <array>
 #include <thread>
 
 #include <fstream>
@@ -229,8 +230,6 @@ void draw()
 					}
 				}
 
-
-
 				for( int h = y1; h < y2; ++h )
 				{
 					for( int w = x1; w < x2; ++w )
@@ -246,6 +245,10 @@ void draw()
 						 / ( max_value - min_value );
 					}
 				}
+
+				//256段階のヒストグラム作って云々する
+				std::array< int, 256 > histgram = {};
+
 
 				::cvShowImage( graph[ i ].depth_.window_name_.c_str(), graph[ i ].depth_.image_ );
 				::cvShowImage( graph[ i ].color_.window_name_.c_str(), graph[ i ].color_.image_ );
