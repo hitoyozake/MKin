@@ -15,6 +15,7 @@
 // NuiApi.hの前にWindows.hをインクルードする
 #include <Windows.h>
 #include <NuiApi.h>
+#include <audiopolicy.h>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -51,6 +52,18 @@ void set_mortor( long const angle, INuiSensor & kinect )
 	Sleep( 100 );
 }
 
+void capture_audio( Runtime & runtime )
+{
+	
+}
+
+void init_audio( Runtime & runtime )
+{
+	NUI_SPEAKER_DEVICE dev;
+	PNUI_MICROPHONE_ARRAY_DEVICE p;
+	p->
+}
+
 void init( std::vector< Runtime > & runtime )
 {
 	using namespace std;
@@ -60,11 +73,12 @@ void init( std::vector< Runtime > & runtime )
 	{
 		NuiCreateSensorByIndex( i, & runtime[ i ].kinect_ );
 
-		runtime[i].kinect_->NuiInitialize( NUI_INITIALIZE_FLAG_USES_COLOR | NUI_INITIALIZE_FLAG_USES_DEPTH );
+		runtime[i].kinect_->NuiInitialize( NUI_INITIALIZE_FLAG_USES_COLOR | NUI_INITIALIZE_FLAG_USES_DEPTH
+			| NUI_INITIALIZE_FLAG_USES_AUDIO );
 
 		runtime[i].color_.event_ = ::CreateEvent( 0, TRUE, FALSE, 0 );
 		runtime[i].depth_.event_ = ::CreateEvent( 0, TRUE, FALSE, 0 );
-
+		
 		//Color=============================================================
 		runtime[i].kinect_->NuiImageStreamOpen( NUI_IMAGE_TYPE_COLOR, NUI_IMAGE_RESOLUTION_640x480,
 			0, 2, runtime[i].color_.image_, &runtime[i].color_.stream_handle_ );
@@ -76,7 +90,7 @@ void init( std::vector< Runtime > & runtime )
 		// 画面サイズを取得
 		DWORD x = 0, y = 0;
 		::NuiImageResolutionToSize( NUI_IMAGE_RESOLUTION_640x480, x, y );			
-
+		
 		// OpenCVの初期設定
 		runtime[i].color_.image_ = ::cvCreateImage( cvSize( x, y ), IPL_DEPTH_8U, 4 );
 		::cvNamedWindow( runtime[ i ].color_.window_name_.c_str() );

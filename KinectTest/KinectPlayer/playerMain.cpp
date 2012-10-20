@@ -26,7 +26,7 @@ struct mouse_info
 	int x1_, x2_, y1_, y2_;
 	int flag_;
 
-	mouse_info() : x1_( 0 ), x2_( 320 ), y1_( 0 ), y2_( 240 )
+	mouse_info() : x1_( 0 ), x2_( 10 ), y1_( 0 ), y2_( 10 )
 	{
 	}
 };
@@ -185,7 +185,7 @@ void draw()
 
 		init( graph );
 
-		int x1 = 0, x2 = 150, y1 = 140, y2 = 240;
+		int x1 = 0, x2 = 10, y1 = 0, y2 = 10;
 
 		while ( continue_flag )
 		{
@@ -214,7 +214,7 @@ void draw()
 				if( ifs_depth[ i ].eof() )
 					continue_flag = false;
 
-				unsigned short max_value = 15, min_value = 655300;
+				unsigned short max_value = 3100, min_value = 655300;
 
 				for( int h = y1; h < y2; ++h )
 				{
@@ -224,8 +224,12 @@ void draw()
 							 graph[ i ].depth_.image_->widthStep * h ) )[ w ];
 						//cout << pixel << endl;
 
-						max_value = max( pixel, max_value );
-						if( pixel > 10 )
+						if( ( y2 - y1 ) * ( x2 - x1 ) < 50 )
+							cout << pixel << endl;
+
+						if( pixel < 11000 )
+							max_value = max( pixel, max_value );q
+						if( pixel > 3000 )
 							min_value = min( pixel, min_value );
 					}
 				}

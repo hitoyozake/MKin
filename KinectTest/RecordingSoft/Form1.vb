@@ -25,8 +25,8 @@ Public Class Form1
     End Function
 
     Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        MessageBox.Show(GenerateFileName())
-
+        RadioButton1.Checked = True
+        RadioButton3.Checked = True
     End Sub
 
     Sub CloseProcess()
@@ -64,5 +64,17 @@ Public Class Form1
 
     Private Sub RichTextBox1_TextChanged(sender As Object, e As EventArgs) Handles RichTextBox1.TextChanged
 
+    End Sub
+
+    Private Sub Button2_Click(sender As Object, e As EventArgs) Handles Button2.Click
+        '終了イベント
+        ToolStripStatusLabel1.Text = "Closing. Please Wait...."
+        Close()
+    End Sub
+
+    Private Sub 終了ToolStripMenuItem_Click(sender As Object, e As EventArgs) Handles 終了ToolStripMenuItem.Click
+        '終了イベント
+        ToolStripStatusLabel1.Text = "Closing. Please Wait...."
+        Close()
     End Sub
 End Class
