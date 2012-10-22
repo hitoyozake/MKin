@@ -61,7 +61,6 @@ void init_audio( Runtime & runtime )
 {
 	NUI_SPEAKER_DEVICE dev;
 	PNUI_MICROPHONE_ARRAY_DEVICE p;
-	p->
 }
 
 void init( std::vector< Runtime > & runtime )
@@ -136,7 +135,7 @@ void wait_input( bool & input_come, std::string & input )
 		{
 			std::cin >> input;
 			input_come = true;
-			Sleep( 300 );
+			Sleep( 100 );
 		}
 	}
 }

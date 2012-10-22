@@ -28,6 +28,7 @@ struct mouse_info
 
 	mouse_info() : x1_( 0 ), x2_( 10 ), y1_( 0 ), y2_( 10 )
 	{
+		
 	}
 };
 
@@ -144,7 +145,7 @@ void wait_input( bool & input_come, std::string & input )
 		{
 			std::cin >> input;
 			input_come = true;
-			Sleep( 300 );
+			Sleep( 600 );
 		}
 	}
 }
@@ -209,7 +210,7 @@ void draw()
 				ifs_depth[ i ].read( graph[ i ].depth_.image_->imageData, 320 * 240 * 2 ); 
 				ifs_color[ i ].read( graph[ i ].color_.image_->imageData, 640 * 480 * 4 ); 
 				
-				Sleep( 30 );
+				Sleep( 300 );
 
 				if( ifs_depth[ i ].eof() )
 					continue_flag = false;
@@ -228,7 +229,7 @@ void draw()
 							cout << pixel << endl;
 
 						if( pixel < 11000 )
-							max_value = max( pixel, max_value );q
+							max_value = max( pixel, max_value );
 						if( pixel > 3000 )
 							min_value = min( pixel, min_value );
 					}

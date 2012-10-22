@@ -2,7 +2,7 @@
 
 Public Class Form1
     Dim process As Process = Nothing
-
+    Dim lastMinute As Integer
     Dim started As Boolean = False
 
     Sub InitProcess()
@@ -39,8 +39,44 @@ Public Class Form1
 
 
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
-
+        
         If started = False Then
+            Dim minutes(5) As Integer
+            minutes(0) = 0
+            minutes(1) = 10
+            minutes(2) = 30
+            minutes(3) = 60
+            minutes(4) = 180
+
+            Dim time As Integer = 0
+
+            If RadioButton3.Checked = True Then
+                time = minutes(0)
+            End If
+            If RadioButton4.Checked = True Then
+                time = minutes(1)
+            End If
+
+            If RadioButton5.Checked = True Then
+                time = minutes(2)
+            End If
+            If RadioButton6.Checked = True Then
+                time = minutes(3)
+            End If
+            If RadioButton7.Checked = True Then
+                time = minutes(4)
+            End If
+
+            If time > 0 Then
+                Timer1.Interval = time * 1000 * 60
+                Timer1.Enabled = True
+                Timer1.Start()
+                Timer2.Enabled = True
+                Timer2.Start()
+
+                Label3.Text = time
+                lastMinute = time
+            End If
             InitProcess()
             process.Start()
 
@@ -76,5 +112,20 @@ Public Class Form1
         '終了イベント
         ToolStripStatusLabel1.Text = "Closing. Please Wait...."
         Close()
+    End Sub
+
+    Private Sub Timer1_Tick(sender As Object, e As EventArgs) Handles Timer1.Tick
+        '終了イベント
+        ToolStripStatusLabel1.Text = "Closing. Please Wait...."
+        Close()
+    End Sub
+
+    Private Sub Timer2_Tick(sender As Object, e As EventArgs) Handles Timer2.Tick
+        lastMinute -= 1
+        If lastMinute < 0 Then
+            lastMinute = 0
+            Timer2.Enabled = False
+        End If
+        Label3.Text = lastMinute
     End Sub
 End Class
