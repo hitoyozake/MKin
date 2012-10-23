@@ -126,6 +126,6 @@ Public Class Form1
             lastMinute = 0
             Timer2.Enabled = False
         End If
-        Label3.Text = lastMinute
+        Label3.Text = lastMinute + " 分"
     End Sub
 End Class

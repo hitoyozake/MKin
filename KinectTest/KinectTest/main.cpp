@@ -75,8 +75,9 @@ void init( std::vector< Runtime > & runtime )
 		runtime[i].kinect_->NuiInitialize( NUI_INITIALIZE_FLAG_USES_COLOR | NUI_INITIALIZE_FLAG_USES_DEPTH
 			| NUI_INITIALIZE_FLAG_USES_AUDIO );
 
-		runtime[i].color_.event_ = ::CreateEvent( 0, TRUE, FALSE, 0 );
-		runtime[i].depth_.event_ = ::CreateEvent( 0, TRUE, FALSE, 0 );
+	
+		runtime[ i ].color_.event_ = ::CreateEvent( 0, TRUE, FALSE, 0 );
+		runtime[ i ].depth_.event_ = ::CreateEvent( 0, TRUE, FALSE, 0 );
 		
 		//Color=============================================================
 		runtime[i].kinect_->NuiImageStreamOpen( NUI_IMAGE_TYPE_COLOR, NUI_IMAGE_RESOLUTION_640x480,
@@ -109,6 +110,19 @@ void init( std::vector< Runtime > & runtime )
 		// OpenCVの初期設定
 		runtime[i].depth_.image_ = ::cvCreateImage( cvSize( x, y ), IPL_DEPTH_16U, 1 );
 		::cvNamedWindow( runtime[ i ].depth_.window_name_.c_str() );
+
+		runtime[ i ].kinect_->NuiImageStreamSetImageFrameFlags( \
+			runtime[i].color_.stream_handle_, \
+			NUI_IMAGE_STREAM_FLAG_SUPPRESS_NO_FRAME_DATA //これで 無効フレーム抑制
+			| NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE //Nearモード
+			);
+
+		runtime[ i ].kinect_->NuiImageStreamSetImageFrameFlags( \
+			runtime[i].depth_.stream_handle_, \
+			NUI_IMAGE_STREAM_FLAG_SUPPRESS_NO_FRAME_DATA //これで 無効フレーム抑制
+			| NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE 
+			);
+
 	}
 }
 
@@ -155,6 +169,8 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 
 			go_sign = 0; 
 			// データの更新を待つ
+			// INFINITEで無効データが来ないっぽいが、同期だいじょうぶ?
+			// StreamFlagsでとりあえず抑制
 			::WaitForSingleObject( runtime.color_.stream_handle_, 100 );
 			::WaitForSingleObject( runtime.depth_.stream_handle_, 100 );
 
@@ -254,6 +270,8 @@ void draw()
 
 	for( int i = 0; i < kinect_count; ++i )
 	{
+		//NearModeの設定
+		
 		string const filename_d = string( "depth_" ) + boost::lexical_cast< string >\
 			( i ) + ".txt";
 		string const filename_c = string( "color_" ) + boost::lexical_cast< string >\

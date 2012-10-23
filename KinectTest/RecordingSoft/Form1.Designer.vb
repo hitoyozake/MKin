@@ -48,6 +48,7 @@ Partial Class Form1
         Me.Button3 = New System.Windows.Forms.Button()
         Me.Timer1 = New System.Windows.Forms.Timer(Me.components)
         Me.Timer2 = New System.Windows.Forms.Timer(Me.components)
+        Me.開発者オプションToolStripMenuItem = New System.Windows.Forms.ToolStripMenuItem()
         Me.StatusStrip1.SuspendLayout()
         Me.GroupBox1.SuspendLayout()
         Me.GroupBox2.SuspendLayout()
@@ -59,9 +60,9 @@ Partial Class Form1
         Me.Button1.Anchor = CType(((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left) _
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.Button1.Font = New System.Drawing.Font("Microsoft Sans Serif", 12.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.Button1.Location = New System.Drawing.Point(12, 323)
+        Me.Button1.Location = New System.Drawing.Point(12, 298)
         Me.Button1.Name = "Button1"
-        Me.Button1.Size = New System.Drawing.Size(204, 128)
+        Me.Button1.Size = New System.Drawing.Size(204, 118)
         Me.Button1.TabIndex = 0
         Me.Button1.Text = "測定開始"
         Me.Button1.UseVisualStyleBackColor = True
@@ -69,9 +70,9 @@ Partial Class Form1
         'Label1
         '
         Me.Label1.AutoSize = True
-        Me.Label1.Location = New System.Drawing.Point(19, 185)
+        Me.Label1.Location = New System.Drawing.Point(19, 171)
         Me.Label1.Name = "Label1"
-        Me.Label1.Size = New System.Drawing.Size(60, 13)
+        Me.Label1.Size = New System.Drawing.Size(58, 12)
         Me.Label1.TabIndex = 1
         Me.Label1.Text = "測定時メモ"
         '
@@ -80,16 +81,16 @@ Partial Class Form1
         Me.RichTextBox1.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
             Or System.Windows.Forms.AnchorStyles.Left) _
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.RichTextBox1.Location = New System.Drawing.Point(21, 202)
+        Me.RichTextBox1.Location = New System.Drawing.Point(21, 186)
         Me.RichTextBox1.Name = "RichTextBox1"
-        Me.RichTextBox1.Size = New System.Drawing.Size(195, 115)
+        Me.RichTextBox1.Size = New System.Drawing.Size(195, 106)
         Me.RichTextBox1.TabIndex = 2
         Me.RichTextBox1.Text = ""
         '
         'StatusStrip1
         '
         Me.StatusStrip1.Items.AddRange(New System.Windows.Forms.ToolStripItem() {Me.ToolStripStatusLabel1})
-        Me.StatusStrip1.Location = New System.Drawing.Point(0, 456)
+        Me.StatusStrip1.Location = New System.Drawing.Point(0, 419)
         Me.StatusStrip1.Name = "StatusStrip1"
         Me.StatusStrip1.Size = New System.Drawing.Size(493, 23)
         Me.StatusStrip1.TabIndex = 3
@@ -108,9 +109,9 @@ Partial Class Form1
         Me.GroupBox1.Controls.Add(Me.RadioButton2)
         Me.GroupBox1.Controls.Add(Me.RadioButton1)
         Me.GroupBox1.Font = New System.Drawing.Font("Microsoft Sans Serif", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.GroupBox1.Location = New System.Drawing.Point(15, 39)
+        Me.GroupBox1.Location = New System.Drawing.Point(15, 36)
         Me.GroupBox1.Name = "GroupBox1"
-        Me.GroupBox1.Size = New System.Drawing.Size(466, 68)
+        Me.GroupBox1.Size = New System.Drawing.Size(466, 63)
         Me.GroupBox1.TabIndex = 4
         Me.GroupBox1.TabStop = False
         Me.GroupBox1.Text = "計測環境"
@@ -118,7 +119,7 @@ Partial Class Form1
         'RadioButton2
         '
         Me.RadioButton2.AutoSize = True
-        Me.RadioButton2.Location = New System.Drawing.Point(152, 28)
+        Me.RadioButton2.Location = New System.Drawing.Point(152, 26)
         Me.RadioButton2.Name = "RadioButton2"
         Me.RadioButton2.Size = New System.Drawing.Size(76, 28)
         Me.RadioButton2.TabIndex = 1
@@ -129,7 +130,7 @@ Partial Class Form1
         'RadioButton1
         '
         Me.RadioButton1.AutoSize = True
-        Me.RadioButton1.Location = New System.Drawing.Point(6, 28)
+        Me.RadioButton1.Location = New System.Drawing.Point(6, 26)
         Me.RadioButton1.Name = "RadioButton1"
         Me.RadioButton1.Size = New System.Drawing.Size(76, 28)
         Me.RadioButton1.TabIndex = 0
@@ -145,9 +146,9 @@ Partial Class Form1
         Me.GroupBox2.Controls.Add(Me.RadioButton4)
         Me.GroupBox2.Controls.Add(Me.RadioButton3)
         Me.GroupBox2.Font = New System.Drawing.Font("MS UI Gothic", 14.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(128, Byte))
-        Me.GroupBox2.Location = New System.Drawing.Point(21, 114)
+        Me.GroupBox2.Location = New System.Drawing.Point(21, 105)
         Me.GroupBox2.Name = "GroupBox2"
-        Me.GroupBox2.Size = New System.Drawing.Size(460, 68)
+        Me.GroupBox2.Size = New System.Drawing.Size(460, 63)
         Me.GroupBox2.TabIndex = 5
         Me.GroupBox2.TabStop = False
         Me.GroupBox2.Text = "タイマー設定"
@@ -155,7 +156,7 @@ Partial Class Form1
         'RadioButton7
         '
         Me.RadioButton7.AutoSize = True
-        Me.RadioButton7.Location = New System.Drawing.Point(356, 27)
+        Me.RadioButton7.Location = New System.Drawing.Point(356, 25)
         Me.RadioButton7.Name = "RadioButton7"
         Me.RadioButton7.Size = New System.Drawing.Size(76, 23)
         Me.RadioButton7.TabIndex = 4
@@ -166,7 +167,7 @@ Partial Class Form1
         'RadioButton6
         '
         Me.RadioButton6.AutoSize = True
-        Me.RadioButton6.Location = New System.Drawing.Point(284, 27)
+        Me.RadioButton6.Location = New System.Drawing.Point(284, 25)
         Me.RadioButton6.Name = "RadioButton6"
         Me.RadioButton6.Size = New System.Drawing.Size(66, 23)
         Me.RadioButton6.TabIndex = 3
@@ -177,7 +178,7 @@ Partial Class Form1
         'RadioButton5
         '
         Me.RadioButton5.AutoSize = True
-        Me.RadioButton5.Location = New System.Drawing.Point(212, 27)
+        Me.RadioButton5.Location = New System.Drawing.Point(212, 25)
         Me.RadioButton5.Name = "RadioButton5"
         Me.RadioButton5.Size = New System.Drawing.Size(66, 23)
         Me.RadioButton5.TabIndex = 2
@@ -188,7 +189,7 @@ Partial Class Form1
         'RadioButton4
         '
         Me.RadioButton4.AutoSize = True
-        Me.RadioButton4.Location = New System.Drawing.Point(129, 27)
+        Me.RadioButton4.Location = New System.Drawing.Point(129, 25)
         Me.RadioButton4.Name = "RadioButton4"
         Me.RadioButton4.Size = New System.Drawing.Size(66, 23)
         Me.RadioButton4.TabIndex = 1
@@ -199,7 +200,7 @@ Partial Class Form1
         'RadioButton3
         '
         Me.RadioButton3.AutoSize = True
-        Me.RadioButton3.Location = New System.Drawing.Point(6, 27)
+        Me.RadioButton3.Location = New System.Drawing.Point(6, 25)
         Me.RadioButton3.Name = "RadioButton3"
         Me.RadioButton3.Size = New System.Drawing.Size(117, 23)
         Me.RadioButton3.TabIndex = 0
@@ -231,7 +232,7 @@ Partial Class Form1
         '
         'ヘルプToolStripMenuItem
         '
-        Me.ヘルプToolStripMenuItem.DropDownItems.AddRange(New System.Windows.Forms.ToolStripItem() {Me.ソフトの使い方AToolStripMenuItem})
+        Me.ヘルプToolStripMenuItem.DropDownItems.AddRange(New System.Windows.Forms.ToolStripItem() {Me.ソフトの使い方AToolStripMenuItem, Me.開発者オプションToolStripMenuItem})
         Me.ヘルプToolStripMenuItem.Name = "ヘルプToolStripMenuItem"
         Me.ヘルプToolStripMenuItem.Size = New System.Drawing.Size(75, 22)
         Me.ヘルプToolStripMenuItem.Text = "ヘルプ(&H)"
@@ -247,7 +248,7 @@ Partial Class Form1
         Me.Label2.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.Label2.AutoSize = True
         Me.Label2.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.75!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.Label2.Location = New System.Drawing.Point(343, 26)
+        Me.Label2.Location = New System.Drawing.Point(343, 24)
         Me.Label2.Name = "Label2"
         Me.Label2.Size = New System.Drawing.Size(68, 16)
         Me.Label2.TabIndex = 7
@@ -258,7 +259,7 @@ Partial Class Form1
         Me.Label3.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.Label3.AutoSize = True
         Me.Label3.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.75!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.Label3.Location = New System.Drawing.Point(426, 26)
+        Me.Label3.Location = New System.Drawing.Point(426, 24)
         Me.Label3.Name = "Label3"
         Me.Label3.Size = New System.Drawing.Size(29, 16)
         Me.Label3.TabIndex = 8
@@ -267,9 +268,9 @@ Partial Class Form1
         'Button2
         '
         Me.Button2.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.Button2.Location = New System.Drawing.Point(360, 381)
+        Me.Button2.Location = New System.Drawing.Point(360, 352)
         Me.Button2.Name = "Button2"
-        Me.Button2.Size = New System.Drawing.Size(121, 70)
+        Me.Button2.Size = New System.Drawing.Size(121, 65)
         Me.Button2.TabIndex = 9
         Me.Button2.Text = "閉じる"
         Me.Button2.UseVisualStyleBackColor = True
@@ -277,9 +278,9 @@ Partial Class Form1
         'Button3
         '
         Me.Button3.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.Button3.Location = New System.Drawing.Point(360, 202)
+        Me.Button3.Location = New System.Drawing.Point(360, 186)
         Me.Button3.Name = "Button3"
-        Me.Button3.Size = New System.Drawing.Size(121, 69)
+        Me.Button3.Size = New System.Drawing.Size(121, 64)
         Me.Button3.TabIndex = 10
         Me.Button3.Text = "Kinectの初期化"
         Me.Button3.UseVisualStyleBackColor = True
@@ -291,11 +292,17 @@ Partial Class Form1
         '
         Me.Timer2.Interval = 60000
         '
+        '開発者オプションToolStripMenuItem
+        '
+        Me.開発者オプションToolStripMenuItem.Name = "開発者オプションToolStripMenuItem"
+        Me.開発者オプションToolStripMenuItem.Size = New System.Drawing.Size(178, 22)
+        Me.開発者オプションToolStripMenuItem.Text = "開発者オプション"
+        '
         'Form1
         '
-        Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
+        Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 12.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(493, 479)
+        Me.ClientSize = New System.Drawing.Size(493, 442)
         Me.Controls.Add(Me.Button3)
         Me.Controls.Add(Me.Button2)
         Me.Controls.Add(Me.Label3)
@@ -308,7 +315,7 @@ Partial Class Form1
         Me.Controls.Add(Me.Label1)
         Me.Controls.Add(Me.Button1)
         Me.MainMenuStrip = Me.MenuStrip1
-        Me.MinimumSize = New System.Drawing.Size(320, 409)
+        Me.MinimumSize = New System.Drawing.Size(320, 380)
         Me.Name = "Form1"
         Me.Text = "Recorder"
         Me.StatusStrip1.ResumeLayout(False)
@@ -348,5 +355,6 @@ Partial Class Form1
     Friend WithEvents Button3 As System.Windows.Forms.Button
     Friend WithEvents Timer1 As System.Windows.Forms.Timer
     Friend WithEvents Timer2 As System.Windows.Forms.Timer
+    Friend WithEvents 開発者オプションToolStripMenuItem As System.Windows.Forms.ToolStripMenuItem
 
 End Class
