@@ -210,7 +210,7 @@ void draw()
 				ifs_depth[ i ].read( graph[ i ].depth_.image_->imageData, 320 * 240 * 2 ); 
 				ifs_color[ i ].read( graph[ i ].color_.image_->imageData, 640 * 480 * 4 ); 
 				
-				Sleep( 300 );
+				Sleep( 30 );
 
 				if( ifs_depth[ i ].eof() )
 					continue_flag = false;
@@ -225,8 +225,9 @@ void draw()
 							 graph[ i ].depth_.image_->widthStep * h ) )[ w ];
 						//cout << pixel << endl;
 
+
 						if( ( y2 - y1 ) * ( x2 - x1 ) < 50 )
-							cout << pixel << endl;
+							cout << pixel / 8 << endl;
 
 						if( pixel < 11000 )
 							max_value = max( pixel, max_value );
