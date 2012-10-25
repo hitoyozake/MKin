@@ -129,7 +129,7 @@ void init( std::vector< graph > & graph )
 
 
 		// OpenCVの初期設定
-		graph[ i ].color_.image_ = ::cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_8U, 4 );
+		graph[ i ].color_.image_ = ::cvCreateImage( cvSize( 160, 120 ), IPL_DEPTH_8U, 4 );
 		::cvNamedWindow( graph[ i ].color_.window_name_.c_str(), CV_WINDOW_KEEPRATIO );
 		graph[ i ].depth_.image_ = ::cvCreateImage( cvSize( 320, 240 ), IPL_DEPTH_16U, 1  );
 		::cvNamedWindow( graph[ i ].depth_.window_name_.c_str(), CV_WINDOW_KEEPRATIO );
@@ -194,9 +194,9 @@ void draw()
 			{
 				mouse.flag_ = 0;
 				x1 = max( 0, min( mouse.x1_ , mouse.x2_ ) );
-				x2 = min( 320, max( mouse.x1_ , mouse.x2_ ) );
+				x2 = min( 160, max( mouse.x1_ , mouse.x2_ ) );
 				y1 = max( 0, min( mouse.y1_ , mouse.y2_ ) );
-				y2 = min( 240, max( mouse.y1_ , mouse.y2_ ) );
+				y2 = min( 120, max( mouse.y1_ , mouse.y2_ ) );
 			}
 
 			cvSetMouseCallback( "MultiKinectPlayer[1] Depth", on_mouse, & mouse );
@@ -208,7 +208,7 @@ void draw()
 				// データのコピーと表示
 				
 				ifs_depth[ i ].read( graph[ i ].depth_.image_->imageData, 320 * 240 * 2 ); 
-				ifs_color[ i ].read( graph[ i ].color_.image_->imageData, 640 * 480 * 4 ); 
+				ifs_color[ i ].read( graph[ i ].color_.image_->imageData, 160 * 120 * 4 ); 
 				
 				Sleep( 30 );
 
@@ -217,45 +217,37 @@ void draw()
 
 				unsigned short max_value = 3100, min_value = 655300;
 
-				for( int h = y1; h < y2; ++h )
-				{
-					for( int w = x1; w < x2; ++w )
-					{
-						unsigned short pixel = ( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
-							 graph[ i ].depth_.image_->widthStep * h ) )[ w ];
-						//cout << pixel << endl;
+				//for( int h = y1; h < y2; ++h )
+				//{
+				//	for( int w = x1; w < x2; ++w )
+				//	{
+				//		unsigned short pixel = ( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
+				//			 graph[ i ].depth_.image_->widthStep * h ) )[ w ];
+				//		//cout << pixel << endl;
 
 
-						if( ( y2 - y1 ) * ( x2 - x1 ) < 50 )
-							cout << pixel / 8 << endl;
+				//		if( ( y2 - y1 ) * ( x2 - x1 ) < 50 )
+				//			cout << pixel / 8 << endl;
 
-						if( pixel < 11000 )
-							max_value = max( pixel, max_value );
-						if( pixel > 3000 )
-							min_value = min( pixel, min_value );
-					}
-				}
+				//	}
+				//}
 
-				for( int h = y1; h < y2; ++h )
-				{
-					for( int w = x1; w < x2; ++w )
-					{
-						( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
-							 graph[ i ].depth_.image_->widthStep * h ) )[ w ] -= min_value;
+				//for( int h = y1; h < y2; ++h )
+				//{
+				//	for( int w = x1; w < x2; ++w )
+				//	{
+				//		( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
+				//			 graph[ i ].depth_.image_->widthStep * h ) )[ w ] -= min_value;
 
-						//代入
-						( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
-							 graph[ i ].depth_.image_->widthStep * h ) )[ w ] = 
-						 ( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
-							 graph[ i ].depth_.image_->widthStep * h ) )[ w ] * 65530.0
-						 / ( max_value - min_value );
-					}
-				}
-
-				//256段階のヒストグラム作って云々する
-				std::array< int, 256 > histgram = {};
-
-
+				//		//代入
+				//		( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
+				//			 graph[ i ].depth_.image_->widthStep * h ) )[ w ] = 
+				//		 ( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
+				//			 graph[ i ].depth_.image_->widthStep * h ) )[ w ] * 65530.0
+				//		 / ( max_value - min_value );
+				//	}
+				//}
+				
 				::cvShowImage( graph[ i ].depth_.window_name_.c_str(), graph[ i ].depth_.image_ );
 				::cvShowImage( graph[ i ].color_.window_name_.c_str(), graph[ i ].color_.image_ );
 

@@ -6,6 +6,7 @@
 #include <fstream>
 #include <boost\shared_ptr.hpp>
 
+
 #include <boost/optional.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/timer.hpp>
@@ -39,6 +40,7 @@ struct Runtime
 
 	boost::shared_ptr< std::ofstream > ofs_d_;
 	boost::shared_ptr< std::ofstream > ofs_c_;
+	CvVideoWriter * vw;
 
 	int id_;
 };
@@ -74,7 +76,8 @@ void init( std::vector< Runtime > & runtime )
 
 		runtime[i].kinect_->NuiInitialize( NUI_INITIALIZE_FLAG_USES_COLOR | NUI_INITIALIZE_FLAG_USES_DEPTH
 			| NUI_INITIALIZE_FLAG_USES_AUDIO );
-
+		runtime[ i ].vw = 
+			cvCreateVideoWriter(( std::to_string( i ) + "cap.avi" ).c_str(), -1, 30, cvSize ((int) 320, (int) 240));
 	
 		runtime[ i ].color_.event_ = ::CreateEvent( 0, TRUE, FALSE, 0 );
 		runtime[ i ].depth_.event_ = ::CreateEvent( 0, TRUE, FALSE, 0 );
@@ -160,6 +163,8 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 	
 	int count = 0;
 	char prev_frame[ 640 * 480 ];
+	auto vw = runtime.vw; 
+	//auto vw = cvCreateVideoWriter (( std::to_string( runtime.id_ ) + "cap.avi" ).c_str(), -1, 30, cvSize ((int) 320, (int) 240));
 
 	while( end_sign == 0 )
 	{
@@ -204,8 +209,11 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 				memcpy( runtime.color_.image_->imageData, (BYTE*)rect->pBits, \
 					runtime.color_.image_->widthStep * runtime.color_.image_->height );
 				::cvShowImage( runtime.color_.window_name_.c_str(), runtime.color_.image_ );
-				runtime.ofs_c_->write\
-				( ( char * )rect->pBits, runtime.color_.image_->widthStep * runtime.color_.image_->height );
+				auto resized = cvCreateImage( cvSize( 320, 240 ), IPL_DEPTH_8U, 4 );
+				cvResize( runtime.color_.image_, resized );
+				boost::timer t;
+				cvWriteFrame( vw, resized );
+				std::cout << t.elapsed() << std::endl;
 			}
 			// ‰æ‘œƒf[ƒ^‚ÌŽæ“¾
 			if( auto rect = std::move( get_image( image_frame_depth_, "DEPTH" ) ) )
@@ -225,6 +233,8 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 		}
 		Sleep( 3 );
 	}
+	cvReleaseVideoWriter( & vw );
+
 }
 
 void end_task( vector< int > & end_sign, vector< thread > & kinect_thread_obj )
