@@ -129,7 +129,7 @@ void init( std::vector< graph > & graph )
 
 
 		// OpenCVの初期設定
-		graph[ i ].color_.image_ = ::cvCreateImage( cvSize( 160, 120 ), IPL_DEPTH_8U, 4 );
+		graph[ i ].color_.image_ = ::cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_8U, 4 );
 		::cvNamedWindow( graph[ i ].color_.window_name_.c_str(), CV_WINDOW_KEEPRATIO );
 		graph[ i ].depth_.image_ = ::cvCreateImage( cvSize( 320, 240 ), IPL_DEPTH_16U, 1  );
 		::cvNamedWindow( graph[ i ].depth_.window_name_.c_str(), CV_WINDOW_KEEPRATIO );
@@ -208,7 +208,7 @@ void draw()
 				// データのコピーと表示
 				
 				ifs_depth[ i ].read( graph[ i ].depth_.image_->imageData, 320 * 240 * 2 ); 
-				ifs_color[ i ].read( graph[ i ].color_.image_->imageData, 160 * 120 * 4 ); 
+				ifs_color[ i ].read( graph[ i ].color_.image_->imageData, 640 * 480 * 4 ); 
 				
 				Sleep( 30 );
 

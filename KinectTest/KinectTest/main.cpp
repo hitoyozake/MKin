@@ -77,7 +77,7 @@ void init( std::vector< Runtime > & runtime )
 		runtime[i].kinect_->NuiInitialize( NUI_INITIALIZE_FLAG_USES_COLOR | NUI_INITIALIZE_FLAG_USES_DEPTH
 			| NUI_INITIALIZE_FLAG_USES_AUDIO );
 		runtime[ i ].vw = 
-			cvCreateVideoWriter(( std::to_string( i ) + "cap.avi" ).c_str(), -1, 30, cvSize ((int) 320, (int) 240));
+			cvCreateVideoWriter(( std::to_string( i ) + "cap.avi" ).c_str(), CV_FOURCC('M','S','V','1'), 30, cvSize ((int) 320, (int) 240));
 	
 		runtime[ i ].color_.event_ = ::CreateEvent( 0, TRUE, FALSE, 0 );
 		runtime[ i ].depth_.event_ = ::CreateEvent( 0, TRUE, FALSE, 0 );
