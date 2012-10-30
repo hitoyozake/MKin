@@ -16,6 +16,9 @@
     <Filter Include="ソース ファイル\kinect">
       <UniqueIdentifier>{62a716a9-e503-43a5-9024-cb0cf0aaa21a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\video">
+      <UniqueIdentifier>{9c937812-4c09-4176-a1eb-099d8c79bf0d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -34,6 +37,9 @@
     </ClInclude>
     <ClInclude Include="kinect.h">
       <Filter>ソース ファイル\kinect</Filter>
+    </ClInclude>
+    <ClInclude Include="video.h">
+      <Filter>ソース ファイル\video</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

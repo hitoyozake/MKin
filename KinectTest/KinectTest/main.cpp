@@ -4,8 +4,9 @@
 #include <vector>
 #include <thread>
 #include <fstream>
-#include <boost\shared_ptr.hpp>
+#include <queue>
 
+#include <boost\shared_ptr.hpp>
 
 #include <boost/optional.hpp>
 #include <boost/algorithm/string.hpp>
@@ -20,6 +21,8 @@
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
+
+#include "video.h"
 
 #define NO_MINMAX
 
@@ -40,7 +43,8 @@ struct Runtime
 
 	boost::shared_ptr< std::ofstream > ofs_d_;
 	boost::shared_ptr< std::ofstream > ofs_c_;
-	CvVideoWriter * vw;
+	
+	boost::shared_ptr< vfw_manager > vw;
 
 	int id_;
 };
@@ -54,17 +58,6 @@ void set_mortor( long const angle, INuiSensor & kinect )
 	Sleep( 100 );
 }
 
-void capture_audio( Runtime & runtime )
-{
-	
-}
-
-void init_audio( Runtime & runtime )
-{
-	NUI_SPEAKER_DEVICE dev;
-	PNUI_MICROPHONE_ARRAY_DEVICE p;
-}
-
 void init( std::vector< Runtime > & runtime )
 {
 	using namespace std;
@@ -76,9 +69,12 @@ void init( std::vector< Runtime > & runtime )
 
 		runtime[i].kinect_->NuiInitialize( NUI_INITIALIZE_FLAG_USES_COLOR | NUI_INITIALIZE_FLAG_USES_DEPTH
 			| NUI_INITIALIZE_FLAG_USES_AUDIO );
-		runtime[ i ].vw = 
-			cvCreateVideoWriter(( std::to_string( i ) + "cap.avi" ).c_str(), CV_FOURCC('M','S','V','1'), 30, cvSize ((int) 320, (int) 240));
-	
+		
+
+		runtime[ i ].vw = boost::shared_ptr< vfw_manager >
+			( new vfw_manager( to_string( i ) + "output.avi", to_string( i ) + "_output.avi", \
+			  320, 240, 1, 30, 30 * 60 * 60 * 4 ) );
+
 		runtime[ i ].color_.event_ = ::CreateEvent( 0, TRUE, FALSE, 0 );
 		runtime[ i ].depth_.event_ = ::CreateEvent( 0, TRUE, FALSE, 0 );
 		
@@ -157,14 +153,55 @@ void wait_input( bool & input_come, std::string & input )
 	}
 }
 
+void video_thread( boost::shared_ptr< vfw_manager > vfw, std::queue< cv::Ptr< IplImage > > & image_queue, \
+				  bool & reading, bool & end_flag )
+{
+	while( ! end_flag )
+	{
+		if( ! reading && ! image_queue.empty() )
+		{
+			reading = true;
+			auto image = image_queue.front();
+			image_queue.pop();
+			reading = false;
+			
+			vfw->write( true, image );
+			std::cout << "queue SIZE : " << image_queue.size() << std::endl;
+		}
+		else
+		{
+			Sleep( 5 );
+			continue;
+		}
+		Sleep( 1 );
+	}
+
+	//終了前に全て書き込む
+	while( ! image_queue.empty() )
+	{
+		if( image_queue.size() % 50 == 0 )
+			std::cout << "ending : queue SIZE : " << image_queue.size() << std::endl;
+		auto image = image_queue.front();
+		image_queue.pop();
+		vfw->write( true, image );
+	}
+}
+
+
 void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & ready_sign )
 {
+	using namespace std;
 	//go_signをオフにするのはこっち. readyをオフにするのはメイン
 	
 	int count = 0;
 	char prev_frame[ 640 * 480 ];
-	auto vw = runtime.vw; 
-	//auto vw = cvCreateVideoWriter (( std::to_string( runtime.id_ ) + "cap.avi" ).c_str(), -1, 30, cvSize ((int) 320, (int) 240));
+
+	//ビデオライタのスレッド
+	bool video_end = false, video_queue_writing = false;
+	queue< cv::Ptr< IplImage > > image_queue;
+	
+	thread vw_thread( video_thread, runtime.vw, std::ref( image_queue ), \
+		std::ref( video_queue_writing ), std::ref( video_end ) );
 
 	while( end_sign == 0 )
 	{
@@ -176,8 +213,8 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 			// データの更新を待つ
 			// INFINITEで無効データが来ないっぽいが、同期だいじょうぶ?
 			// StreamFlagsでとりあえず抑制
-			::WaitForSingleObject( runtime.color_.stream_handle_, 100 );
-			::WaitForSingleObject( runtime.depth_.stream_handle_, 100 );
+			::WaitForSingleObject( runtime.color_.stream_handle_, 40 );
+			::WaitForSingleObject( runtime.depth_.stream_handle_, 40 );
 
 			// カメラデータの取得
 			NUI_IMAGE_FRAME image_frame_depth_;
@@ -205,14 +242,29 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 			// 画像データの取得
 			if( auto rect = std::move( get_image( image_frame_color_, "COLOR" ) ) )
 			{
+				boost::timer t;
+
 				// データのコピーと表示
 				memcpy( runtime.color_.image_->imageData, (BYTE*)rect->pBits, \
 					runtime.color_.image_->widthStep * runtime.color_.image_->height );
 				::cvShowImage( runtime.color_.window_name_.c_str(), runtime.color_.image_ );
 				auto resized = cvCreateImage( cvSize( 320, 240 ), IPL_DEPTH_8U, 4 );
 				cvResize( runtime.color_.image_, resized );
-				boost::timer t;
-				cvWriteFrame( vw, resized );
+				
+				if( video_queue_writing )
+				{
+					//スピン待機
+					while( video_queue_writing )
+					{
+						Sleep( 1 );
+					}
+				}
+				//キュー追加
+				video_queue_writing = true;
+				image_queue.push( resized );
+				video_queue_writing = false;
+								
+				//runtime.vw->write( true, resized );
 				std::cout << t.elapsed() << std::endl;
 			}
 			// 画像データの取得
@@ -231,9 +283,12 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 			ready_sign = 1;
 
 		}
-		Sleep( 3 );
+		Sleep( 5 );
 	}
-	cvReleaseVideoWriter( & vw );
+
+	video_end = true;
+	vw_thread.join();
+	std::cout << "Video Thread End" << std::endl;
 
 }
 
