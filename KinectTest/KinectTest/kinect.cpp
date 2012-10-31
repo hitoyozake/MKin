@@ -62,4 +62,16 @@ namespace kinect
 			 NUI_IMAGE_STREAM_FLAG_SUPPRESS_NO_FRAME_DATA //‚±‚ê‚Å –³ŒøƒtƒŒ[ƒ€—}§
 			);
 	}
+	
+	//kinect ctor
+	kinect_manager::kinect::kinect() : \
+		device_( nullptr ), near_mode_( false )
+	{
+	}
+	
+	//image_receiver ctor
+	kinect_manager::kinect::image_receiver::image_receiver() :\
+		event_( NULL ), stream_handle_( NULL ), image_( nullptr )
+	{
+	}
 }

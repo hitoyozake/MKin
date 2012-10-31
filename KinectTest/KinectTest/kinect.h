@@ -14,6 +14,11 @@ namespace kinect
 		void set_near_mode();
 		void unset_near_mode();
 
+		cv::Ptr< IplImage > get_color_image_from_pre_frame() const;
+		cv::Ptr< IplImage > get_depth_image_from_pre_frame() const;
+
+		std::pair< cv::Ptr< IplImage >, cv::Ptr< IplImage > get_and_update_frame();
+
 	private:
 		boost::shared_ptr< std::ofstream > ofs_d_;
 		boost::shared_ptr< std::ofstream > ofs_c_;
@@ -29,6 +34,8 @@ namespace kinect
 				cv::Ptr< IplImage > image_; //表示データ
 
 				std::string id_str_;	//openCVのWindowNameなどに使う
+
+				image_receiver();
 			};
 
 			INuiSensor * device_;         // Kinectのインスタンス
@@ -46,9 +53,7 @@ namespace kinect
 			//recommended to use KINECT_NUI_FLAG_DEFAULT
 			void init( int const index, int const nui_init_flags );
 
-			kinect()
-			{
-			}
+			kinect();
 		};
 
 		kinect kinect_;
