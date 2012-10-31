@@ -17,7 +17,7 @@ namespace kinect
 		cv::Ptr< IplImage > get_color_image_from_pre_frame() const;
 		cv::Ptr< IplImage > get_depth_image_from_pre_frame() const;
 
-		std::pair< cv::Ptr< IplImage >, cv::Ptr< IplImage > get_and_update_frame();
+		std::pair< cv::Ptr< IplImage >, cv::Ptr< IplImage > > get_and_update_frame();
 
 	private:
 		boost::shared_ptr< std::ofstream > ofs_d_;

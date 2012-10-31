@@ -92,7 +92,7 @@ void init( std::vector< Runtime > & runtime )
 		
 		// OpenCVの初期設定
 		runtime[i].color_.image_ = ::cvCreateImage( cvSize( x, y ), IPL_DEPTH_8U, 4 );
-		::cvNamedWindow( runtime[ i ].color_.window_name_.c_str() );
+		::cvNamedWindow( runtime[ i ].color_.window_name_.c_str(),  CV_WINDOW_KEEPRATIO );
 
 
 		//深度==============================================================
@@ -107,8 +107,8 @@ void init( std::vector< Runtime > & runtime )
 		// 画面サイズを取得
 
 		// OpenCVの初期設定
-		runtime[i].depth_.image_ = ::cvCreateImage( cvSize( x, y ), IPL_DEPTH_16U, 1 );
-		::cvNamedWindow( runtime[ i ].depth_.window_name_.c_str() );
+		runtime[i].depth_.image_ = ::cvCreateImage( cvSize( x, y ), IPL_DEPTH_8U, 4 );
+		::cvNamedWindow( runtime[ i ].depth_.window_name_.c_str(),  CV_WINDOW_KEEPRATIO );
 
 		runtime[ i ].kinect_->NuiImageStreamSetImageFrameFlags( \
 			runtime[i].color_.stream_handle_, \
@@ -271,10 +271,68 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 			if( auto rect = std::move( get_image( image_frame_depth_, "DEPTH" ) ) )
 			{
 				// データのコピーと表示
-				memcpy( runtime.depth_.image_->imageData, (BYTE*)rect->pBits, \
-					runtime.depth_.image_->widthStep * runtime.depth_.image_->height );
+				cv::Ptr< IplImage > depth_image = cvCreateImage( cvSize( 320, 240 ), IPL_DEPTH_16U, 1 );
+				memcpy( depth_image->imageData, (BYTE*)rect->pBits, \
+					depth_image->widthStep * depth_image->height );
+				for( int y = 0; y < 240; ++y )
+				{
+					//ピクセル書き換え
+					for( int x = 0; x < 320; ++x )
+					{
+						auto * pixel_ptr = & runtime.depth_.image_->imageData[ x * 4 + 320 * y * 4 ];
+						auto const pixel = ( ( UINT16 * )( depth_image->imageData +\
+							depth_image->widthStep * y ) )[ x ] / 8;
+
+
+
+						if( pixel < 650 )
+						{
+							pixel_ptr[ 0 ] = 0;
+							pixel_ptr[ 1 ]  = ( char )( pixel * ( 255.0 / 650.0 ) ); 
+							pixel_ptr[ 2 ] = 255;
+						}
+						if( pixel < 1300 && pixel >= 650 )
+						{
+							pixel_ptr[ 0 ] = 0;
+							pixel_ptr[ 1 ] = 255;
+							pixel_ptr[ 2 ]  =  ( char )( 255 - ( pixel - 650 )* ( 255.0 / 650.0 ) ); 
+						}
+						if( pixel < 1950 && pixel >= 1300 )
+						{
+							pixel_ptr[ 0 ] = ( char )( ( pixel - 1300 ) * ( 255.0 / 650.0 ) );
+							pixel_ptr[ 1 ] = 255;
+							pixel_ptr[ 2 ]  =  0; 
+						}
+						if( pixel < 2600 && pixel >= 1950 )
+						{
+							pixel_ptr[ 0 ] = 255;
+							pixel_ptr[ 1 ] = ( char )( 255 - ( pixel - 1950 )* ( 255.0 / 650.0 ) );
+							pixel_ptr[ 2 ]  = ( char )( ( pixel - 1950 ) * ( 255.0 / 650.0 ) ); 
+						}
+						if( pixel < 3250 && pixel >= 2600 )
+						{
+							pixel_ptr[ 0 ] = 255;
+							pixel_ptr[ 1 ] = 0;
+							pixel_ptr[ 2 ]  = ( char )( 255 - ( pixel - 2600 ) * ( 255.0 / 650.0 ) ); 
+						}
+						if( pixel < 4000 && pixel >= 3250 )
+						{
+							pixel_ptr[ 0 ] = ( char )( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) );
+							pixel_ptr[ 1 ] = ( char )( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) );
+							pixel_ptr[ 2 ]  = ( char )( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) ); 
+						}
+
+						if( pixel >= 4000 )
+						{
+							pixel_ptr[ 0 ] = 255;
+							pixel_ptr[ 1 ] = 255;
+							pixel_ptr[ 2 ]  = 255; 
+						}
+					}
+				}
+
 				::cvShowImage( runtime.depth_.window_name_.c_str(), runtime.depth_.image_ );
-				runtime.ofs_d_->write( ( char * )rect->pBits, runtime.depth_.image_->widthStep * runtime.depth_.image_->height );
+				runtime.ofs_d_->write( ( char * )rect->pBits, depth_image->widthStep * depth_image->height );
 			}
 
 			// カメラデータの解放
