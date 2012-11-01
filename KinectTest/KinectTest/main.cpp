@@ -13,6 +13,8 @@
 #include <boost/timer.hpp>
 
 #include <boost/lexical_cast.hpp>
+//#include <boost/date_time/gregorian/gregorian.hpp>
+//#include <boost/date_time/posix_time/posix_time.hpp>
 
 // NuiApi.hの前にWindows.hをインクルードする
 #include <Windows.h>
@@ -58,6 +60,21 @@ void set_mortor( long const angle, INuiSensor & kinect )
 	Sleep( 100 );
 }
 
+//現在の日時を取得
+//std::string generate_current_time()
+//{
+//	auto const today = boost::gregorian::day_clock::local_day();
+//	std::string today_as_iso = boost::gregorian::to_iso_string( today );
+//
+//	using boost::posix_time::ptime;
+//	using boost::posix_time::second_clock;
+//	ptime now = second_clock::local_time(); // 実行しているロケールの現在時刻
+//	std::string time = boost::posix_time::to_iso_string( now );
+//
+//	return today_as_iso + time;
+//
+//}
+
 void init( std::vector< Runtime > & runtime )
 {
 	using namespace std;
@@ -70,9 +87,9 @@ void init( std::vector< Runtime > & runtime )
 		runtime[i].kinect_->NuiInitialize( NUI_INITIALIZE_FLAG_USES_COLOR | NUI_INITIALIZE_FLAG_USES_DEPTH
 			| NUI_INITIALIZE_FLAG_USES_AUDIO );
 		
-
+		std::string drive = "E:\\recorded_data\\";
 		runtime[ i ].vw = boost::shared_ptr< vfw_manager >
-			( new vfw_manager( to_string( i ) + "output.avi", to_string( i ) + "_output.avi", \
+			( new vfw_manager( drive + to_string( i ) + "output.avi", to_string( i ) + "_output.avi", \
 			  320, 240, 1, 30, 30 * 60 * 60 * 4 ) );
 
 		runtime[ i ].color_.event_ = ::CreateEvent( 0, TRUE, FALSE, 0 );
@@ -284,11 +301,15 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 							depth_image->widthStep * y ) )[ x ] / 8;
 
 
+						pixel_ptr[ 0 ] = 50;
+						pixel_ptr[ 1 ] = 50;
+						pixel_ptr[ 2 ] = 50;
 
-						if( pixel < 650 )
+
+						if( pixel < 650 && pixel >= 400)
 						{
 							pixel_ptr[ 0 ] = 0;
-							pixel_ptr[ 1 ]  = ( char )( pixel * ( 255.0 / 650.0 ) ); 
+							pixel_ptr[ 1 ]  = ( char )( ( pixel - 400 ) * ( 255.0 / 250.0 ) ); 
 							pixel_ptr[ 2 ] = 255;
 						}
 						if( pixel < 1300 && pixel >= 650 )
