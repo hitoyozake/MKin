@@ -26,6 +26,8 @@
 
 #include "video.h"
 
+#pragma comment( lib, "x86/Kinect10.lib" )
+
 #define NO_MINMAX
 
 struct Runtime
@@ -46,7 +48,7 @@ struct Runtime
 	boost::shared_ptr< std::ofstream > ofs_d_;
 	boost::shared_ptr< std::ofstream > ofs_c_;
 	
-	boost::shared_ptr< vfw_manager > vw;
+	boost::shared_ptr< video::vfw_manager > vw;
 
 	int id_;
 };
@@ -87,9 +89,9 @@ void init( std::vector< Runtime > & runtime )
 		runtime[i].kinect_->NuiInitialize( NUI_INITIALIZE_FLAG_USES_COLOR | NUI_INITIALIZE_FLAG_USES_DEPTH
 			| NUI_INITIALIZE_FLAG_USES_AUDIO );
 		
-		std::string drive = "E:\\recorded_data\\";
-		runtime[ i ].vw = boost::shared_ptr< vfw_manager >
-			( new vfw_manager( drive + to_string( i ) + "output.avi", to_string( i ) + "_output.avi", \
+		std::string drive = "F:\\recorded_data\\";
+		runtime[ i ].vw = boost::shared_ptr< video::vfw_manager >
+			( new video::vfw_manager( drive + to_string( i ) + "output.avi", to_string( i ) + "_output.avi", \
 			  320, 240, 1, 30, 30 * 60 * 60 * 4 ) );
 
 		runtime[ i ].color_.event_ = ::CreateEvent( 0, TRUE, FALSE, 0 );
@@ -170,7 +172,7 @@ void wait_input( bool & input_come, std::string & input )
 	}
 }
 
-void video_thread( boost::shared_ptr< vfw_manager > vfw, std::queue< cv::Ptr< IplImage > > & image_queue, \
+void video_thread( boost::shared_ptr< video::vfw_manager > vfw, std::queue< cv::Ptr< IplImage > > & image_queue, \
 				  bool & reading, bool & end_flag )
 {
 	while( ! end_flag )
@@ -281,7 +283,6 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 				image_queue.push( resized );
 				video_queue_writing = false;
 								
-				//runtime.vw->write( true, resized );
 				std::cout << t.elapsed() << std::endl;
 			}
 			// ‰æ‘œƒf[ƒ^‚ÌŽæ“¾

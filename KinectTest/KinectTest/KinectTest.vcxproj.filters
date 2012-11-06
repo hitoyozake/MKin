@@ -30,6 +30,9 @@
     <ClCompile Include="kinect.cpp">
       <Filter>ソース ファイル\kinect</Filter>
     </ClCompile>
+    <ClCompile Include="video.cpp">
+      <Filter>ソース ファイル\video</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="precompiled.h">

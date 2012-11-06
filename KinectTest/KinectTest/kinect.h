@@ -14,14 +14,16 @@ namespace kinect
 		void set_near_mode();
 		void unset_near_mode();
 
+		bool update_frame( bool const show_debug_message );
+
 		cv::Ptr< IplImage > get_color_image_from_pre_frame() const;
 		cv::Ptr< IplImage > get_depth_image_from_pre_frame() const;
-
-		std::pair< cv::Ptr< IplImage >, cv::Ptr< IplImage > > get_and_update_frame();
 
 	private:
 		boost::shared_ptr< std::ofstream > ofs_d_;
 		boost::shared_ptr< std::ofstream > ofs_c_;
+
+		boost::optional< NUI_LOCKED_RECT > get_image( NUI_IMAGE_FRAME const & image_frame );
 
 		int id_;
 
@@ -48,10 +50,10 @@ namespace kinect
 				NUI_INITIALIZE_FLAG_USES_COLOR | NUI_INITIALIZE_FLAG_USES_DEPTH;
 
 			void init_stream( NUI_IMAGE_TYPE nui_image_type, \
-				NUI_IMAGE_RESOLUTION const resolution, HANDLE & image, HANDLE & stream_handle, bool const create_window, bool is_color );
+				NUI_IMAGE_RESOLUTION const resolution, HANDLE image, HANDLE stream_handle, bool const create_window, bool is_color );
 
 			//recommended to use KINECT_NUI_FLAG_DEFAULT
-			void init( int const index, int const nui_init_flags );
+			void init( int const index, DWORD const nui_init_flags, bool const create_window );
 
 			kinect();
 		};
