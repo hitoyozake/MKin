@@ -89,7 +89,7 @@ void init( std::vector< Runtime > & runtime )
 		runtime[i].kinect_->NuiInitialize( NUI_INITIALIZE_FLAG_USES_COLOR | NUI_INITIALIZE_FLAG_USES_DEPTH
 			| NUI_INITIALIZE_FLAG_USES_AUDIO );
 		
-		std::string drive = "F:\\recorded_data\\";
+		std::string drive = "";//"F:\\recorded_data\\";
 		runtime[ i ].vw = boost::shared_ptr< video::vfw_manager >
 			( new video::vfw_manager( drive + to_string( i ) + "output.avi", to_string( i ) + "_output.avi", \
 			  320, 240, 1, 30, 30 * 60 * 60 * 4 ) );
@@ -115,9 +115,9 @@ void init( std::vector< Runtime > & runtime )
 
 
 		//深度==============================================================
-		::NuiImageResolutionToSize( NUI_IMAGE_RESOLUTION_320x240, x, y );	
+		::NuiImageResolutionToSize( NUI_IMAGE_RESOLUTION_640x480, x, y );	
 
-		runtime[i].kinect_->NuiImageStreamOpen( NUI_IMAGE_TYPE_DEPTH, NUI_IMAGE_RESOLUTION_320x240,
+		runtime[i].kinect_->NuiImageStreamOpen( NUI_IMAGE_TYPE_DEPTH, NUI_IMAGE_RESOLUTION_640x480,
 			0, 2, runtime[ i ].depth_.image_, & runtime[ i ].depth_.stream_handle_ );
 		// ウィンドウ名を作成
 		runtime[ i ].depth_.window_name_ = "MultiKinect[" + boost::lexical_cast< string >\
@@ -289,15 +289,15 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 			if( auto rect = std::move( get_image( image_frame_depth_, "DEPTH" ) ) )
 			{
 				// データのコピーと表示
-				cv::Ptr< IplImage > depth_image = cvCreateImage( cvSize( 320, 240 ), IPL_DEPTH_16U, 1 );
+				cv::Ptr< IplImage > depth_image = cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_16U, 1 );
 				memcpy( depth_image->imageData, (BYTE*)rect->pBits, \
 					depth_image->widthStep * depth_image->height );
-				for( int y = 0; y < 240; ++y )
+				for( int y = 0; y < 480; ++y )
 				{
 					//ピクセル書き換え
-					for( int x = 0; x < 320; ++x )
+					for( int x = 0; x < 640; ++x )
 					{
-						auto * pixel_ptr = & runtime.depth_.image_->imageData[ x * 4 + 320 * y * 4 ];
+						auto * pixel_ptr = & runtime.depth_.image_->imageData[ x * 4 + 640 * y * 4 ];
 						auto const pixel = ( ( UINT16 * )( depth_image->imageData +\
 							depth_image->widthStep * y ) )[ x ] / 8;
 
