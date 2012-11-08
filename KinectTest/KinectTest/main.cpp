@@ -5,12 +5,13 @@
 #include <thread>
 #include <fstream>
 #include <queue>
+#include <boost/format.hpp>
 
 #include <boost\shared_ptr.hpp>
 
 #include <boost/optional.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/timer.hpp>
+#include <boost/timer/timer.hpp>
 
 #include <boost/lexical_cast.hpp>
 //#include <boost/date_time/gregorian/gregorian.hpp>
@@ -27,6 +28,8 @@
 #include "video.h"
 
 #pragma comment( lib, "x86/Kinect10.lib" )
+#pragma comment( lib, "libboost_timer-vc110-mt-gd-1_51.lib" )
+
 
 #define NO_MINMAX
 
@@ -77,7 +80,7 @@ void set_mortor( long const angle, INuiSensor & kinect )
 //
 //}
 
-void init( std::vector< Runtime > & runtime )
+void init( std::vector< Runtime > & runtime, bool color_view = false )
 {
 	using namespace std;
 	NUI_IMAGE_RESOLUTION const resolution = NUI_IMAGE_RESOLUTION_640x480;
@@ -126,7 +129,11 @@ void init( std::vector< Runtime > & runtime )
 		// 画面サイズを取得
 
 		// OpenCVの初期設定
-		runtime[i].depth_.image_ = ::cvCreateImage( cvSize( x, y ), IPL_DEPTH_8U, 4 );
+		if( color_view )
+			runtime[i].depth_.image_ = ::cvCreateImage( cvSize( x, y ), IPL_DEPTH_8U, 4 );
+		else
+			runtime[ i ].depth_.image_ = ::cvCreateImage( cvSize( x, y ), IPL_DEPTH_16U, 1 );
+
 		::cvNamedWindow( runtime[ i ].depth_.window_name_.c_str(),  CV_WINDOW_KEEPRATIO );
 
 		runtime[ i ].kinect_->NuiImageStreamSetImageFrameFlags( \
@@ -232,8 +239,8 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 			// データの更新を待つ
 			// INFINITEで無効データが来ないっぽいが、同期だいじょうぶ?
 			// StreamFlagsでとりあえず抑制
-			::WaitForSingleObject( runtime.color_.stream_handle_, 40 );
-			::WaitForSingleObject( runtime.depth_.stream_handle_, 40 );
+			::WaitForSingleObject( runtime.color_.stream_handle_, INFINITE );
+			::WaitForSingleObject( runtime.depth_.stream_handle_, INFINITE );
 
 			// カメラデータの取得
 			NUI_IMAGE_FRAME image_frame_depth_;
@@ -247,6 +254,7 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 				if( hRes != S_OK ){
 					printf(" ERR: [%d]DEPTH%dフレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.\n", runtime.id_, count, hRes);
 					ready_sign = 1;
+					Sleep( 20 );
 					continue;
 				}
 			}
@@ -255,13 +263,13 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 				if( hRes != S_OK ){
 					printf(" ERR: [%d]COLOR%dフレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.\n", runtime.id_, count, hRes );
 					ready_sign = 1;
+					Sleep( 20 );
 					continue;
 				}
 			}
 			// 画像データの取得
 			if( auto rect = std::move( get_image( image_frame_color_, "COLOR" ) ) )
 			{
-				boost::timer t;
 
 				// データのコピーと表示
 				memcpy( runtime.color_.image_->imageData, (BYTE*)rect->pBits, \
@@ -283,7 +291,6 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 				image_queue.push( resized );
 				video_queue_writing = false;
 								
-				std::cout << t.elapsed() << std::endl;
 			}
 			// 画像データの取得
 			if( auto rect = std::move( get_image( image_frame_depth_, "DEPTH" ) ) )
@@ -292,78 +299,88 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 				cv::Ptr< IplImage > depth_image = cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_16U, 1 );
 				memcpy( depth_image->imageData, (BYTE*)rect->pBits, \
 					depth_image->widthStep * depth_image->height );
-				for( int y = 0; y < 480; ++y )
+
+				if( runtime.depth_.image_->nChannels == 4 )
 				{
-					//ピクセル書き換え
-					for( int x = 0; x < 640; ++x )
+					for( int y = 0; y < 480; ++y )
 					{
-						auto * pixel_ptr = & runtime.depth_.image_->imageData[ x * 4 + 640 * y * 4 ];
-						auto const pixel = ( ( UINT16 * )( depth_image->imageData +\
-							depth_image->widthStep * y ) )[ x ] / 8;
+						//ピクセル書き換え
+						for( int x = 0; x < 640; ++x )
+						{
+							auto * pixel_ptr = & runtime.depth_.image_->imageData[ x * 4 + 640 * y * 4 ];
+							auto const pixel = ( ( UINT16 * )( depth_image->imageData +\
+								depth_image->widthStep * y ) )[ x ] / 8;
 
 
-						pixel_ptr[ 0 ] = 50;
-						pixel_ptr[ 1 ] = 50;
-						pixel_ptr[ 2 ] = 50;
+							pixel_ptr[ 0 ] = 50;
+							pixel_ptr[ 1 ] = 50;
+							pixel_ptr[ 2 ] = 50;
 
 
-						if( pixel < 650 && pixel >= 400)
-						{
-							pixel_ptr[ 0 ] = 0;
-							pixel_ptr[ 1 ]  = ( char )( ( pixel - 400 ) * ( 255.0 / 250.0 ) ); 
-							pixel_ptr[ 2 ] = 255;
-						}
-						if( pixel < 1300 && pixel >= 650 )
-						{
-							pixel_ptr[ 0 ] = 0;
-							pixel_ptr[ 1 ] = 255;
-							pixel_ptr[ 2 ]  =  ( char )( 255 - ( pixel - 650 )* ( 255.0 / 650.0 ) ); 
-						}
-						if( pixel < 1950 && pixel >= 1300 )
-						{
-							pixel_ptr[ 0 ] = ( char )( ( pixel - 1300 ) * ( 255.0 / 650.0 ) );
-							pixel_ptr[ 1 ] = 255;
-							pixel_ptr[ 2 ]  =  0; 
-						}
-						if( pixel < 2600 && pixel >= 1950 )
-						{
-							pixel_ptr[ 0 ] = 255;
-							pixel_ptr[ 1 ] = ( char )( 255 - ( pixel - 1950 )* ( 255.0 / 650.0 ) );
-							pixel_ptr[ 2 ]  = ( char )( ( pixel - 1950 ) * ( 255.0 / 650.0 ) ); 
-						}
-						if( pixel < 3250 && pixel >= 2600 )
-						{
-							pixel_ptr[ 0 ] = 255;
-							pixel_ptr[ 1 ] = 0;
-							pixel_ptr[ 2 ]  = ( char )( 255 - ( pixel - 2600 ) * ( 255.0 / 650.0 ) ); 
-						}
-						if( pixel < 4000 && pixel >= 3250 )
-						{
-							pixel_ptr[ 0 ] = ( char )( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) );
-							pixel_ptr[ 1 ] = ( char )( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) );
-							pixel_ptr[ 2 ]  = ( char )( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) ); 
-						}
+							if( pixel < 650 && pixel >= 400)
+							{
+								pixel_ptr[ 0 ] = 0;
+								pixel_ptr[ 1 ]  = ( char )( ( pixel - 400 ) * ( 255.0 / 250.0 ) ); 
+								pixel_ptr[ 2 ] = 255;
+							}
+							if( pixel < 1300 && pixel >= 650 )
+							{
+								pixel_ptr[ 0 ] = 0;
+								pixel_ptr[ 1 ] = 255;
+								pixel_ptr[ 2 ]  =  ( char )( 255 - ( pixel - 650 )* ( 255.0 / 650.0 ) ); 
+							}
+							if( pixel < 1950 && pixel >= 1300 )
+							{
+								pixel_ptr[ 0 ] = ( char )( ( pixel - 1300 ) * ( 255.0 / 650.0 ) );
+								pixel_ptr[ 1 ] = 255;
+								pixel_ptr[ 2 ]  =  0; 
+							}
+							if( pixel < 2600 && pixel >= 1950 )
+							{
+								pixel_ptr[ 0 ] = 255;
+								pixel_ptr[ 1 ] = ( char )( 255 - ( pixel - 1950 )* ( 255.0 / 650.0 ) );
+								pixel_ptr[ 2 ]  = ( char )( ( pixel - 1950 ) * ( 255.0 / 650.0 ) ); 
+							}
+							if( pixel < 3250 && pixel >= 2600 )
+							{
+								pixel_ptr[ 0 ] = 255;
+								pixel_ptr[ 1 ] = 0;
+								pixel_ptr[ 2 ]  = ( char )( 255 - ( pixel - 2600 ) * ( 255.0 / 650.0 ) ); 
+							}
+							if( pixel < 4000 && pixel >= 3250 )
+							{
+								pixel_ptr[ 0 ] = ( char )( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) );
+								pixel_ptr[ 1 ] = ( char )( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) );
+								pixel_ptr[ 2 ]  = ( char )( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) ); 
+							}
 
-						if( pixel >= 4000 )
-						{
-							pixel_ptr[ 0 ] = 255;
-							pixel_ptr[ 1 ] = 255;
-							pixel_ptr[ 2 ]  = 255; 
+							if( pixel >= 4000 )
+							{
+								pixel_ptr[ 0 ] = 255;
+								pixel_ptr[ 1 ] = 255;
+								pixel_ptr[ 2 ]  = 255; 
+							}
 						}
 					}
+					::cvShowImage( runtime.depth_.window_name_.c_str(), runtime.depth_.image_ );
 				}
-
-				::cvShowImage( runtime.depth_.window_name_.c_str(), runtime.depth_.image_ );
+				else
+				{
+					::cvShowImage( runtime.depth_.window_name_.c_str(), depth_image );
+				}
 				runtime.ofs_d_->write( ( char * )rect->pBits, depth_image->widthStep * depth_image->height );
 			}
 
 			// カメラデータの解放
 			runtime.kinect_->NuiImageStreamReleaseFrame( runtime.color_.stream_handle_, image_frame_color );
+
+			cout << "release" << endl;
 			runtime.kinect_->NuiImageStreamReleaseFrame( runtime.depth_.stream_handle_, image_frame_depth );
 			ready_sign = 1;
+			Sleep( 10 );
 
 		}
-		Sleep( 5 );
+		Sleep( 2 );
 	}
 
 	video_end = true;
@@ -397,8 +414,20 @@ void draw()
 	typedef std::vector< Runtime > Runtimes;
 	Runtimes runtime( kinect_count );
 	//runtime.push_back( Runtime() );
-	init( runtime );
 
+	{
+		bool color_view = false;
+	
+		cout << "COLOR VIEW MODE : ";
+		int mode = 0;
+
+		cin >> mode;
+
+		if( mode != 0 )
+			color_view = true;
+
+		init( runtime, color_view );
+	}
 	bool continue_flag = true;
 	int count = 0;
 
@@ -438,8 +467,7 @@ void draw()
 	//開始 ->find_ifで書き換え可能コード
 	for( auto & i : go_sign )
 		i = 1;
-
-	boost::timer timer;
+	boost::timer::cpu_timer timer;
 	while ( continue_flag )
 	{
 		int flag = 1;
@@ -451,14 +479,21 @@ void draw()
 
 		if( flag == 1 )
 		{
-			dlog << timer.elapsed() << endl;
-			timer.restart();
+			dlog << boost::format( "%0.8lf" ) %  ( timer.elapsed().wall / 1000000 ) << endl;
+			timer.start();
+
 			//全部待機済みなので、次のフレーム
 			for( auto & i : ready_sign )
 				i = 0;
 			for( auto & i : go_sign )
 				i = 1;
-			Sleep( 20 );
+
+			//ここで0.033秒待つ
+			while( ( timer.elapsed().wall / 1000000.0 ) < 15.0 )
+			{
+				Sleep( 1 );
+			}
+
 		}
 
 		//終了信号
