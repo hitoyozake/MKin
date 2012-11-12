@@ -5,6 +5,7 @@
 #include <thread>
 #include <fstream>
 #include <queue>
+#include <chrono>
 #include <boost/format.hpp>
 
 #include <boost\shared_ptr.hpp>
@@ -192,7 +193,7 @@ void video_thread( boost::shared_ptr< video::vfw_manager > vfw, std::queue< cv::
 			reading = false;
 			
 			vfw->write( true, image );
-			std::cout << "queue SIZE : " << image_queue.size() << std::endl;
+			//std::cout << "queue SIZE : " << image_queue.size() << std::endl;
 		}
 		else
 		{
@@ -254,7 +255,7 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 				if( hRes != S_OK ){
 					printf(" ERR: [%d]DEPTH%dフレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.\n", runtime.id_, count, hRes);
 					ready_sign = 1;
-					Sleep( 20 );
+					Sleep( 10 );
 					continue;
 				}
 			}
@@ -263,7 +264,7 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 				if( hRes != S_OK ){
 					printf(" ERR: [%d]COLOR%dフレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.\n", runtime.id_, count, hRes );
 					ready_sign = 1;
-					Sleep( 20 );
+					Sleep( 10 );
 					continue;
 				}
 			}
@@ -374,10 +375,9 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 			// カメラデータの解放
 			runtime.kinect_->NuiImageStreamReleaseFrame( runtime.color_.stream_handle_, image_frame_color );
 
-			cout << "release" << endl;
 			runtime.kinect_->NuiImageStreamReleaseFrame( runtime.depth_.stream_handle_, image_frame_depth );
 			ready_sign = 1;
-			Sleep( 10 );
+			Sleep( 5 );
 
 		}
 		Sleep( 2 );
@@ -477,24 +477,7 @@ void draw()
 			flag = flag & i;
 		}
 
-		if( flag == 1 )
-		{
-			dlog << boost::format( "%0.8lf" ) %  ( timer.elapsed().wall / 1000000 ) << endl;
-			timer.start();
 
-			//全部待機済みなので、次のフレーム
-			for( auto & i : ready_sign )
-				i = 0;
-			for( auto & i : go_sign )
-				i = 1;
-
-			//ここで0.033秒待つ
-			while( ( timer.elapsed().wall / 1000000.0 ) < 15.0 )
-			{
-				Sleep( 1 );
-			}
-
-		}
 
 		//終了信号
 		if( input_come )
@@ -514,9 +497,28 @@ void draw()
 		if ( key == 'q' ) {
 			continue_flag = false;
 		}
+
+		if( flag == 1 )
+		{
+			//全部待機済みなので、次のフレーム
+			for( auto & i : ready_sign )
+				i = 0;
+			for( auto & i : go_sign )
+				i = 1;
+
+			//ここで0.033秒待つ
+			auto const dif_time =  static_cast< boost::timer::nanosecond_type >( 0.035 * 1000000000 ) - timer.elapsed().wall;
+			if( dif_time > 0 )
+			{
+				auto const sleep_time = static_cast< long long >( dif_time * 0.000000001 * 1000 );
+				std::this_thread::sleep_for( \
+					std::chrono::milliseconds( sleep_time ) );
+			}
+			dlog << boost::format( "%ld" ) %  ( timer.elapsed().wall ) << endl;
+			timer.start();
+		}
 	}
 
-	timer.elapsed();
 	end_task( end_sign, kinect_thread_obj );
 	//スレッドの終了待ち
 	input_wait_thread.join();
