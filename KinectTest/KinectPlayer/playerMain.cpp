@@ -17,6 +17,10 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+#include "../KinectTest/video.h"
+#include "../KinectTest/video.cpp"
+
+
 #define NO_MINMAX
 
 int const KINECT_NUM = 1;
@@ -28,44 +32,44 @@ struct mouse_info
 
 	mouse_info() : x1_( 0 ), x2_( 10 ), y1_( 0 ), y2_( 10 )
 	{
-		
+
 	}
 };
 
 void on_mouse( int event, int x, int y, int flags, void *param )
 {
 	auto mouse = static_cast< mouse_info * >( param );
-   switch(event){
-   case CV_EVENT_MOUSEMOVE:
-      break;
-   case CV_EVENT_LBUTTONDOWN:
-	   cout << "hello" << endl;
-	   mouse->flag_ = false;
-	   mouse->x1_ = x;
-	   mouse->y1_ = y;
-	// When Left button is pressed, ...
-	break;
-	  
-   case CV_EVENT_LBUTTONUP:
-	   mouse->x2_ = x;
-	   mouse->y2_ = y;
-	   cout << "hellohellohello" << endl;
+	switch(event){
+	case CV_EVENT_MOUSEMOVE:
+		break;
+	case CV_EVENT_LBUTTONDOWN:
+		cout << "hello" << endl;
+		mouse->flag_ = false;
+		mouse->x1_ = x;
+		mouse->y1_ = y;
+		// When Left button is pressed, ...
+		break;
 
-	   mouse->flag_ = true;
-	// When Left button is released, ...
-       break;
+	case CV_EVENT_LBUTTONUP:
+		mouse->x2_ = x;
+		mouse->y2_ = y;
+		cout << "hellohellohello" << endl;
 
-   case CV_EVENT_RBUTTONDOWN:
-	
-       break;
-	  
-   case CV_EVENT_RBUTTONUP:
+		mouse->flag_ = true;
+		// When Left button is released, ...
+		break;
 
-	break;
+	case CV_EVENT_RBUTTONDOWN:
 
-   default:
-	break;
-   }
+		break;
+
+	case CV_EVENT_RBUTTONUP:
+
+		break;
+
+	default:
+		break;
+	}
 }
 
 struct Runtime
@@ -96,7 +100,7 @@ struct graph
 
 	data depth_;
 	data color_;
-	
+
 	std::string filename_;
 };
 
@@ -113,7 +117,7 @@ void set_mortor( long const angle, INuiSensor & kinect )
 void init( std::vector< graph > & graph )
 {
 	using namespace std;
-	
+
 	for( size_t i = 0; i < graph.size(); ++i )
 	{
 		//深度==============================================================
@@ -131,7 +135,7 @@ void init( std::vector< graph > & graph )
 		// OpenCVの初期設定
 		graph[ i ].color_.image_ = ::cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_8U, 4 );
 		::cvNamedWindow( graph[ i ].color_.window_name_.c_str(), CV_WINDOW_KEEPRATIO );
-		graph[ i ].depth_.image_ = ::cvCreateImage( cvSize( 320, 240 ), IPL_DEPTH_16U, 1  );
+		graph[ i ].depth_.image_ = ::cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_16U, 1  );
 		::cvNamedWindow( graph[ i ].depth_.window_name_.c_str(), CV_WINDOW_KEEPRATIO );
 	}
 }
@@ -150,16 +154,80 @@ void wait_input( bool & input_come, std::string & input )
 	}
 }
 
+cv::Ptr< IplImage > convert_color_from_depth( cv::Ptr< IplImage > depth )
+{
+	auto const width = depth->width;
+	auto const height = depth->height;
+	cv::Ptr< IplImage > color = cvCreateImage( cvSize( width, height ), \
+		IPL_DEPTH_8U, 4 );
+
+	for( int x = 0; x < width; ++x )
+	{
+		for( int y = 0; y < height; ++y )
+		{
+			auto * pixel_ptr = & color->imageData[ x * 4 + width * y * 4 ];
+			auto const pixel = ( ( ( UINT16 * )( depth->imageData +\
+				depth->widthStep * y ) )[ x ] ) >> 3;
+
+			if( pixel < 650 && pixel >= 400)
+			{
+				pixel_ptr[ 0 ] = 0;
+				pixel_ptr[ 1 ]  = ( char )( ( pixel - 400 ) * ( 255.0 / 250.0 ) ); 
+				pixel_ptr[ 2 ] = 255;
+			}
+			if( pixel < 1300 && pixel >= 650 )
+			{
+				pixel_ptr[ 0 ] = 0;
+				pixel_ptr[ 1 ] = 255;
+				pixel_ptr[ 2 ]  =  ( char )( 255 - ( pixel - 650 )* ( 255.0 / 650.0 ) ); 
+			}
+			if( pixel < 1950 && pixel >= 1300 )
+			{
+				pixel_ptr[ 0 ] = ( char )( ( pixel - 1300 ) * ( 255.0 / 650.0 ) );
+				pixel_ptr[ 1 ] = 255;
+				pixel_ptr[ 2 ]  =  0; 
+			}
+			if( pixel < 2600 && pixel >= 1950 )
+			{
+				pixel_ptr[ 0 ] = 255;
+				pixel_ptr[ 1 ] = ( char )( 255 - ( pixel - 1950 )* ( 255.0 / 650.0 ) );
+				pixel_ptr[ 2 ]  = ( char )( ( pixel - 1950 ) * ( 255.0 / 650.0 ) ); 
+			}
+			if( pixel < 3250 && pixel >= 2600 )
+			{
+				pixel_ptr[ 0 ] = 255;
+				pixel_ptr[ 1 ] = 0;
+				pixel_ptr[ 2 ]  = ( char )( 255 - ( pixel - 2600 ) * ( 255.0 / 650.0 ) ); 
+			}
+			if( pixel < 4000 && pixel >= 3250 )
+			{
+				pixel_ptr[ 0 ] = ( char )( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) );
+				pixel_ptr[ 1 ] = ( char )( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) );
+				pixel_ptr[ 2 ]  = ( char )( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) ); 
+			}
+
+			if( pixel >= 4000 )
+			{
+				pixel_ptr[ 0 ] = 255;
+				pixel_ptr[ 1 ] = 255;
+				pixel_ptr[ 2 ]  = 255; 
+			}
+		}
+	}
+	return color;
+}
+
 
 void draw()
 {
 	using namespace std;
 	int const kinect_count = 1;
+	bool const use_mouse = false;
 	vector< ifstream >  ifs_depth( kinect_count );
-	vector< ifstream >  ifs_color( kinect_count );
+	//vector< ifstream >  ifs_color( kinect_count );
 	mouse_info mouse;
 	//size_t filesize = ( size_t )ifs.seekg( 0, std::ios::end).tellg();
-
+	video::vfw_manager video_m( "output.avi", "output.avi", 640, 480, 1, 30, 30 * 60 * 60 );
 	//ifs.seekg( 0, std::ios::beg );
 
 	//std::cout << "size:" << filesize << std::endl;
@@ -172,13 +240,13 @@ void draw()
 			( i ) + ".txt";
 
 		ifs_depth[ i ].open( filename_d, ios::binary );
-		ifs_color[ i ].open( filename_c, ios::binary );
+		//ifs_color[ i ].open( filename_c, ios::binary );
 	}
 
 	try {
 
 		std::vector< graph > graph( KINECT_NUM );
-		
+
 		bool continue_flag = true;
 		int count = 0;
 
@@ -190,68 +258,77 @@ void draw()
 
 		while ( continue_flag )
 		{
-			if( mouse.flag_ )
+			
 			{
-				mouse.flag_ = 0;
-				x1 = max( 0, min( mouse.x1_ , mouse.x2_ ) );
-				x2 = min( 160, max( mouse.x1_ , mouse.x2_ ) );
-				y1 = max( 0, min( mouse.y1_ , mouse.y2_ ) );
-				y2 = min( 120, max( mouse.y1_ , mouse.y2_ ) );
+				if( mouse.flag_ )
+				{
+					mouse.flag_ = 0;
+					x1 = max( 0, min( mouse.x1_ , mouse.x2_ ) );
+					x2 = min( 160, max( mouse.x1_ , mouse.x2_ ) );
+					y1 = max( 0, min( mouse.y1_ , mouse.y2_ ) );
+					y2 = min( 120, max( mouse.y1_ , mouse.y2_ ) );
+				}
 			}
 
 			cvSetMouseCallback( "MultiKinectPlayer[1] Depth", on_mouse, & mouse );
 
 			for( size_t i = 0; i < graph.size(); ++i )
 			{
-				// 画像データの取得
+				ifs_depth[ i ].read( graph[ i ].depth_.image_->imageData, 640 * 480 * 2 ); 
+				//if( use_mouse )
+				{
+					// 画像データの取得
 
-				// データのコピーと表示
-				
-				ifs_depth[ i ].read( graph[ i ].depth_.image_->imageData, 320 * 240 * 2 ); 
-				ifs_color[ i ].read( graph[ i ].color_.image_->imageData, 640 * 480 * 4 ); 
-				
-				Sleep( 30 );
+					// データのコピーと表示
 
-				if( ifs_depth[ i ].eof() )
-					continue_flag = false;
+					//ifs_color[ i ].read( graph[ i ].color_.image_->imageData, 640 * 480 * 4 ); 
 
-				unsigned short max_value = 3100, min_value = 655300;
+					Sleep( 1 );
 
-				//for( int h = y1; h < y2; ++h )
-				//{
-				//	for( int w = x1; w < x2; ++w )
-				//	{
-				//		unsigned short pixel = ( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
-				//			 graph[ i ].depth_.image_->widthStep * h ) )[ w ];
-				//		//cout << pixel << endl;
+					if( ifs_depth[ i ].eof() )
+						continue_flag = false;
+
+					unsigned short max_value = 3100, min_value = 655300;
+
+					for( int h = y1; h < y2; ++h )
+					{
+						for( int w = x1; w < x2; ++w )
+						{
+							unsigned short pixel = ( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
+								graph[ i ].depth_.image_->widthStep * h ) )[ w ];
+							//cout << pixel << endl;
 
 
-				//		if( ( y2 - y1 ) * ( x2 - x1 ) < 50 )
-				//			cout << pixel / 8 << endl;
+							if( ( y2 - y1 ) * ( x2 - x1 ) < 50 )
+								cout << pixel / 8 << endl;
 
-				//	}
-				//}
+						}
+					}
 
-				//for( int h = y1; h < y2; ++h )
-				//{
-				//	for( int w = x1; w < x2; ++w )
-				//	{
-				//		( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
-				//			 graph[ i ].depth_.image_->widthStep * h ) )[ w ] -= min_value;
+					for( int h = y1; h < y2; ++h )
+					{
+						for( int w = x1; w < x2; ++w )
+						{
+							( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
+								graph[ i ].depth_.image_->widthStep * h ) )[ w ] -= min_value;
 
-				//		//代入
-				//		( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
-				//			 graph[ i ].depth_.image_->widthStep * h ) )[ w ] = 
-				//		 ( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
-				//			 graph[ i ].depth_.image_->widthStep * h ) )[ w ] * 65530.0
-				//		 / ( max_value - min_value );
-				//	}
-				//}
-				
+							//代入
+							( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
+								graph[ i ].depth_.image_->widthStep * h ) )[ w ] = 
+								( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
+								graph[ i ].depth_.image_->widthStep * h ) )[ w ] * 65530.0
+								/ ( max_value - min_value );
+						}
+					}
+
+				}
+
+
 				::cvShowImage( graph[ i ].depth_.window_name_.c_str(), graph[ i ].depth_.image_ );
-				::cvShowImage( graph[ i ].color_.window_name_.c_str(), graph[ i ].color_.image_ );
 
 				//選択領域から最大のものと最小の画素を選んでその値で割る? 3000 - 3500 x / 3500
+
+				video_m.write( true, convert_color_from_depth( graph[ i ].depth_.image_ ) );
 
 				int key = ::cvWaitKey( 10 );
 				if ( key == 'q' ) {
@@ -261,7 +338,6 @@ void draw()
 			cout << "frame : " << ++count << endl;
 
 		}
-		
 
 		::cvDestroyAllWindows();
 
