@@ -19,6 +19,9 @@
     <Filter Include="ソース ファイル\video">
       <UniqueIdentifier>{9c937812-4c09-4176-a1eb-099d8c79bf0d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\pcl">
+      <UniqueIdentifier>{7a108f62-26d8-43c8-ae80-8aa5f6203181}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -33,6 +36,9 @@
     <ClCompile Include="video.cpp">
       <Filter>ソース ファイル\video</Filter>
     </ClCompile>
+    <ClCompile Include="pcl_manager.cpp">
+      <Filter>ソース ファイル\pcl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="precompiled.h">
@@ -43,6 +49,9 @@
     </ClInclude>
     <ClInclude Include="video.h">
       <Filter>ソース ファイル\video</Filter>
+    </ClInclude>
+    <ClInclude Include="pcl_manager.h">
+      <Filter>ソース ファイル\pcl</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

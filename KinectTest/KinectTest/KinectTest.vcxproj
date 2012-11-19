@@ -80,10 +80,12 @@
     <ClCompile Include="kinect.cpp" />
     <ClCompile Include="kinect_audio.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="pcl_manager.cpp" />
     <ClCompile Include="video.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="kinect.h" />
+    <ClInclude Include="pcl_manager.h" />
     <ClInclude Include="precompiled.h" />
     <ClInclude Include="video.h" />
   </ItemGroup>
