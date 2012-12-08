@@ -33,7 +33,7 @@
 #include "video.h"
 
 #pragma comment( lib, "x86/Kinect10.lib" )
-#pragma comment( lib, "libboost_timer-vc110-mt-gd-1_51.lib" )
+#pragma comment( lib, "libboost_timer-vc110-mt-gd-1_52.lib" )
 
 
 #define NO_MINMAX
