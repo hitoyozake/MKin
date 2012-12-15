@@ -354,9 +354,9 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 							}
 							if( pixel < 4000 && pixel >= 3250 )
 							{
-								pixel_ptr[ 0 ] = ( char )( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) );
-								pixel_ptr[ 1 ] = ( char )( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) );
-								pixel_ptr[ 2 ]  = ( char )( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) ); 
+								pixel_ptr[ 0 ] = static_cast< char >( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) );
+								pixel_ptr[ 1 ] = static_cast< char >( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) );
+								pixel_ptr[ 2 ]  = static_cast< char >( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) ); 
 							}
 
 							if( pixel >= 4000 )

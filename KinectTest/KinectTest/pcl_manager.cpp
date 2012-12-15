@@ -1,6 +1,7 @@
 #include "pcl_manager.h"
 #include <opencv2/opencv.hpp>
 #include <NuiApi.h>
+#include <boost/shared_ptr.hpp>
 #pragma comment( lib, "pcl_visualization_debug.lib" )
 
 
@@ -11,14 +12,29 @@ namespace pcl_manager
 	{
 	public:
 		void view( pcl::PointCloud< pcl::PointXYZ >::ConstPtr const & cloud );
+
+		void init_viewer();
 	private:
-		pcl::visualization::CloudViewer viewer_;
+		boost::shared_ptr< pcl::visualization::PCLVisualizer > viewer_;
 	};
+
+	void pcl_manager::init_viewer()
+	{
+		viewer_ = boost::shared_ptr< pcl::visualization::PCLVisualizer >( new \
+			pcl::visualization::PCLVisualizer( "3D Viewer" ) );
+
+		viewer_->setBackgroundColor( 0, 0, 0 );
+		viewer_->setPointCloudRenderingProperties( pcl::visualization::PCL_VISUALIZER_POINT_SIZE, \
+			1, 0 );
+		viewer_->addCoordinateSystem( 1.0 );
+		viewer_->initCameraParameters();
+	}
+
 
 	void pcl_manager::view( pcl::PointCloud< pcl::PointXYZ >::ConstPtr const & cloud )
 	{
-		if( ! viewer_.wasStopped() )
-			viewer_.showCloud( cloud );
+		viewer_->updatePointCloud( cloud, 0 );
+		viewer_->spinOnce();	//スクリーン表示の更新
 	}
 
 	//depthごとにカラーを添付
@@ -27,6 +43,68 @@ namespace pcl_manager
 		IplImage * result = cvCreateImage( cvSize(\
 			depth->width, depth->height ),\
 			IPL_DEPTH_16U, 4 );
+
+		for( int y = 0; y < depth->height; ++y )
+		{
+			for( int x = 0; x < depth->width; ++x )
+			{
+				auto const pixel = ( reinterpret_cast< unsigned short * >( \
+					( depth->imageData + depth->widthStep * y ) ) )[ x ] / 8;
+				auto * pixel_ptr = std::addressof( depth->imageData[ x * 4 +\
+					depth->width * y * 4 ] );
+
+				int const b = 0, g = 1, r = 2;
+
+				pixel_ptr[ b ] = 50;
+				pixel_ptr[ g ] = 50;
+				pixel_ptr[ r ] = 50;
+
+				if( pixel < 650 && pixel >= 400)
+				{
+					pixel_ptr[ b ] = 0;
+					pixel_ptr[ g ]  = static_cast< char >( ( pixel - 400 ) * ( 255.0 / 250.0 ) ); 
+					pixel_ptr[ r ] = 255;
+				}
+				if( pixel < 1300 && pixel >= 650 )
+				{
+					pixel_ptr[ b ] = 0;
+					pixel_ptr[ g ] = 255;
+					pixel_ptr[ r ]  =  static_cast< char >( 255 - ( pixel - 650 )* ( 255.0 / 650.0 ) ); 
+				}
+				if( pixel < 1950 && pixel >= 1300 )
+				{
+					pixel_ptr[ b ] = static_cast< char >( ( pixel - 1300 ) * ( 255.0 / 650.0 ) );
+					pixel_ptr[ g ] = 255;
+					pixel_ptr[ r ]  =  0; 
+				}
+				if( pixel < 2600 && pixel >= 1950 )
+				{
+					pixel_ptr[ b ] = 255;
+					pixel_ptr[ g ] = static_cast< char >( 255 - ( pixel - 1950 )* ( 255.0 / 650.0 ) );
+					pixel_ptr[ r ]  = static_cast< char >( ( pixel - 1950 ) * ( 255.0 / 650.0 ) ); 
+				}
+				if( pixel < 3250 && pixel >= 2600 )
+				{
+					pixel_ptr[ b ] = 255;
+					pixel_ptr[ g ] = 0;
+					pixel_ptr[ r ]  = static_cast< char >( 255 - ( pixel - 2600 ) * ( 255.0 / 650.0 ) ); 
+				}
+				if( pixel < 4000 && pixel >= 3250 )
+				{
+					pixel_ptr[ b ] = static_cast< char >( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) );
+					pixel_ptr[ g ] = static_cast< char >( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) );
+					pixel_ptr[ r ]  = static_cast< char >( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) ); 
+				}
+
+				if( pixel >= 4000 )
+				{
+					pixel_ptr[ b ] = 255;
+					pixel_ptr[ g ] = 255;
+					pixel_ptr[ r ]  = 255; 
+				}
+			}
+		}
+
 
 		return result;
 	}
