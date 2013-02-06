@@ -43,7 +43,7 @@ namespace pcl_manager
 		IplImage * result = cvCreateImage( cvSize(\
 			depth->width, depth->height ),\
 			IPL_DEPTH_16U, 4 );
-
+		
 		for( int y = 0; y < depth->height; ++y )
 		{
 			for( int x = 0; x < depth->width; ++x )
@@ -104,13 +104,11 @@ namespace pcl_manager
 				}
 			}
 		}
-
-
 		return result;
 	}
 
 	//3次元ポイントクラウドのための座標変換
-	void convert_color_img_to_point_cloud( IplImage * depth )
+	pcl::PointCloud< pcl:: PointXYZRGB >::Ptr convert_color_img_to_point_cloud( IplImage * depth )
 	{
 		using namespace cv;
 		using namespace std;
@@ -156,9 +154,10 @@ namespace pcl_manager
 				}
 			}
 		}
+		return cloud_ptr;
 	}
 
-	void convert_depth_img_to_point_cloud( IplImage * color )
+	pcl::PointCloud< pcl:: PointXYZRGB >::Ptr convert_depth_img_to_point_cloud( IplImage * color )
 	{
 		cv::vector< cv::Mat > channels;
 
@@ -193,6 +192,8 @@ namespace pcl_manager
 
 		cloud_ptr->width = static_cast< int >( cloud_ptr->points.size() );
 		cloud_ptr->height = 1;
+
+		return cloud_ptr;
 	}
 		
 	void draw_point_cloud()

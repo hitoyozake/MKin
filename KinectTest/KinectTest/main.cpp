@@ -26,14 +26,12 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-#include <pcl\point_cloud.h>
-#include <pcl/visualization/cloud_viewer.h>
 
 
 #include "video.h"
 
 #pragma comment( lib, "x86/Kinect10.lib" )
-#pragma comment( lib, "libboost_timer-vc110-mt-gd-1_52.lib" )
+#pragma comment( lib, "libboost_timer-vc110-mt-gd-1_51.lib" )
 
 
 #define NO_MINMAX
@@ -56,7 +54,7 @@ struct Runtime
 	boost::shared_ptr< std::ofstream > ofs_d_;
 	boost::shared_ptr< std::ofstream > ofs_c_;
 	
-	boost::shared_ptr< video::vfw_manager > vw;
+	boost::shared_ptr< video::vfw_manager > vw_;
 
 	int id_;
 };
@@ -98,9 +96,9 @@ void init( std::vector< Runtime > & runtime, bool color_view = false )
 			| NUI_INITIALIZE_FLAG_USES_AUDIO );
 		
 		std::string drive = "";//"F:\\recorded_data\\";
-		runtime[ i ].vw = boost::shared_ptr< video::vfw_manager >
+		runtime[ i ].vw_ = boost::shared_ptr< video::vfw_manager >
 			( new video::vfw_manager( drive + to_string( i ) + "output.avi", to_string( i ) + "_output.avi", \
-			  320, 240, 1, 30, 30 * 60 * 60 * 4 ) );
+			  640, 480, 1, 30, 30 * 60 * 60 * 4 ) );
 
 		runtime[ i ].color_.event_ = ::CreateEvent( 0, TRUE, FALSE, 0 );
 		runtime[ i ].depth_.event_ = ::CreateEvent( 0, TRUE, FALSE, 0 );
@@ -231,7 +229,7 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 	bool video_end = false, video_queue_writing = false;
 	queue< cv::Ptr< IplImage > > image_queue;
 	
-	thread vw_thread( video_thread, runtime.vw, std::ref( image_queue ), \
+	thread vw_thread( video_thread, runtime.vw_, std::ref( image_queue ), \
 		std::ref( video_queue_writing ), std::ref( video_end ) );
 
 	while( end_sign == 0 )
@@ -280,7 +278,7 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 				memcpy( runtime.color_.image_->imageData, (BYTE*)rect->pBits, \
 					runtime.color_.image_->widthStep * runtime.color_.image_->height );
 				::cvShowImage( runtime.color_.window_name_.c_str(), runtime.color_.image_ );
-				auto resized = cvCreateImage( cvSize( 320, 240 ), IPL_DEPTH_8U, 4 );
+				auto resized = cvCreateImage( cvSize( runtime.vw_->width(), runtime.vw_->height() ), IPL_DEPTH_8U, 4 );
 				cvResize( runtime.color_.image_, resized );
 				
 				if( video_queue_writing )
@@ -382,6 +380,11 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 			runtime.kinect_->NuiImageStreamReleaseFrame( runtime.depth_.stream_handle_, image_frame_depth );
 			ready_sign = 1;
 			Sleep( 5 );
+
+			if( end_sign == 1 )
+			{
+				break;
+			}
 
 		}
 		Sleep( 2 );
@@ -527,6 +530,7 @@ void draw()
 	//スレッドの終了待ち
 	input_wait_thread.join();
 
+	std::cout << "Waiting for Kinect Shutdown" << std::endl;
 	// 終了処理
 	for( auto const & i : runtime )
 	{
@@ -535,6 +539,8 @@ void draw()
 	}
 	//Windowを閉じる
 	::cvDestroyAllWindows();
+
+	std::cout << "FINISH" << std::endl;
 
 }
 

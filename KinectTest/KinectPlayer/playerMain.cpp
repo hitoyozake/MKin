@@ -169,41 +169,51 @@ cv::Ptr< IplImage > convert_color_from_depth( cv::Ptr< IplImage > depth )
 			auto const pixel = ( ( ( UINT16 * )( depth->imageData +\
 				depth->widthStep * y ) )[ x ] ) >> 3;
 
-			if( pixel < 650 && pixel >= 400)
+			const int tmp = 400;
+
+			if( pixel < 400 + tmp)
+			{
+				pixel_ptr[ 0 ] = 70;
+				pixel_ptr[ 1 ]  = 70;
+				pixel_ptr[ 2 ]  = 70;
+
+			}
+
+			if( pixel < 650  + tmp && pixel >= 400 + tmp )
 			{
 				pixel_ptr[ 0 ] = 0;
-				pixel_ptr[ 1 ]  = ( char )( ( pixel - 400 ) * ( 255.0 / 250.0 ) ); 
+				pixel_ptr[ 1 ]  = ( char )( ( pixel - 400 - tmp ) * ( 255.0 / 250.0 ) ); 
 				pixel_ptr[ 2 ] = 255;
 			}
-			if( pixel < 1300 && pixel >= 650 )
+			if( pixel < 1300  + tmp && pixel >= 650  + tmp )
 			{
 				pixel_ptr[ 0 ] = 0;
 				pixel_ptr[ 1 ] = 255;
-				pixel_ptr[ 2 ]  =  ( char )( 255 - ( pixel - 650 )* ( 255.0 / 650.0 ) ); 
+				pixel_ptr[ 2 ]  =  ( char )( 255 - ( pixel - 650 - tmp)* ( 255.0 / 650.0 ) ); 
 			}
-			if( pixel < 1950 && pixel >= 1300 )
+			if( pixel < 1950  + tmp && pixel >= 1300  + tmp )
 			{
-				pixel_ptr[ 0 ] = ( char )( ( pixel - 1300 ) * ( 255.0 / 650.0 ) );
+				pixel_ptr[ 0 ] = ( char )( ( pixel - 1300  - tmp ) * ( 255.0 / 650.0 ) );
 				pixel_ptr[ 1 ] = 255;
 				pixel_ptr[ 2 ]  =  0; 
 			}
-			if( pixel < 2600 && pixel >= 1950 )
+			if( pixel < 2600  + tmp && pixel >= 1950 + tmp )
 			{
 				pixel_ptr[ 0 ] = 255;
-				pixel_ptr[ 1 ] = ( char )( 255 - ( pixel - 1950 )* ( 255.0 / 650.0 ) );
-				pixel_ptr[ 2 ]  = ( char )( ( pixel - 1950 ) * ( 255.0 / 650.0 ) ); 
+				pixel_ptr[ 1 ] = ( char )( 255 - ( pixel - 1950 - tmp )* ( 255.0 / 650.0 ) );
+				pixel_ptr[ 2 ]  = ( char )( ( pixel - 1950 - tmp) * ( 255.0 / 650.0 ) ); 
 			}
-			if( pixel < 3250 && pixel >= 2600 )
+			if( pixel < 3250  + tmp && pixel >= 2600 + tmp )
 			{
 				pixel_ptr[ 0 ] = 255;
 				pixel_ptr[ 1 ] = 0;
-				pixel_ptr[ 2 ]  = ( char )( 255 - ( pixel - 2600 ) * ( 255.0 / 650.0 ) ); 
+				pixel_ptr[ 2 ]  = ( char )( 255 - ( pixel - 2600 - tmp ) * ( 255.0 / 650.0 ) ); 
 			}
-			if( pixel < 4000 && pixel >= 3250 )
+			if( pixel < 4000  + tmp && pixel >= 3250 + tmp )
 			{
-				pixel_ptr[ 0 ] = ( char )( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) );
-				pixel_ptr[ 1 ] = ( char )( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) );
-				pixel_ptr[ 2 ]  = ( char )( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) ); 
+				pixel_ptr[ 0 ] = ( char )( 255 - ( pixel - 3250  - tmp ) * ( 255.0 / 650.0 ) );
+				pixel_ptr[ 1 ] = ( char )( 255 - ( pixel - 3250  - tmp) * ( 255.0 / 650.0 ) );
+				pixel_ptr[ 2 ]  = ( char )( 255 - ( pixel - 3250  - tmp) * ( 255.0 / 650.0 ) ); 
 			}
 
 			if( pixel >= 4000 )
@@ -224,7 +234,7 @@ void draw()
 	int const kinect_count = 1;
 	bool const use_mouse = false;
 	vector< ifstream >  ifs_depth( kinect_count );
-	//vector< ifstream >  ifs_color( kinect_count );
+	vector< ifstream >  ifs_color( kinect_count );
 	mouse_info mouse;
 	//size_t filesize = ( size_t )ifs.seekg( 0, std::ios::end).tellg();
 	video::vfw_manager video_m( "output.avi", "output.avi", 640, 480, 1, 30, 30 * 60 * 60 );
@@ -240,7 +250,7 @@ void draw()
 			( i ) + ".txt";
 
 		ifs_depth[ i ].open( filename_d, ios::binary );
-		//ifs_color[ i ].open( filename_c, ios::binary );
+		ifs_color[ i ].open( filename_c, ios::binary );
 	}
 
 	try {
@@ -281,7 +291,7 @@ void draw()
 
 					// データのコピーと表示
 
-					//ifs_color[ i ].read( graph[ i ].color_.image_->imageData, 640 * 480 * 4 ); 
+					ifs_color[ i ].read( graph[ i ].color_.image_->imageData, 640 * 480 * 4 ); 
 
 					Sleep( 1 );
 
@@ -325,6 +335,7 @@ void draw()
 
 
 				::cvShowImage( graph[ i ].depth_.window_name_.c_str(), graph[ i ].depth_.image_ );
+				::cvShowImage( graph[ i ].color_.window_name_.c_str(), graph[ i ].color_.image_ );
 
 				//選択領域から最大のものと最小の画素を選んでその値で割る? 3000 - 3500 x / 3500
 

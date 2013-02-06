@@ -105,7 +105,7 @@ namespace kinect
 		}
 		{
 			auto const depth_resolution = \
-				NUI_IMAGE_RESOLUTION_320x240;
+				NUI_IMAGE_RESOLUTION_640x480;
 
 			//color‚Ì‰Šú‰»
 			init_stream( NUI_IMAGE_TYPE_DEPTH, depth_resolution,

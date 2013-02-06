@@ -25,6 +25,9 @@ namespace video
 		~vfw_manager();
 		void reset();
 
+		int width() const{ return width_; }
+		int height() const{ return height_; }
+
 	private:
 		void close();
 
