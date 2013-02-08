@@ -182,38 +182,38 @@ cv::Ptr< IplImage > convert_color_from_depth( cv::Ptr< IplImage > depth )
 			if( pixel < 650  + tmp && pixel >= 400 + tmp )
 			{
 				pixel_ptr[ 0 ] = 0;
-				pixel_ptr[ 1 ]  = ( char )( ( pixel - 400 - tmp ) * ( 255.0 / 250.0 ) ); 
+				pixel_ptr[ 1 ]  = static_cast< char >( ( pixel - 400 - tmp ) * ( 255.0 / 250.0 ) ); 
 				pixel_ptr[ 2 ] = 255;
 			}
 			if( pixel < 1300  + tmp && pixel >= 650  + tmp )
 			{
 				pixel_ptr[ 0 ] = 0;
 				pixel_ptr[ 1 ] = 255;
-				pixel_ptr[ 2 ]  =  ( char )( 255 - ( pixel - 650 - tmp)* ( 255.0 / 650.0 ) ); 
+				pixel_ptr[ 2 ]  =  static_cast< char >( 255 - ( pixel - 650 - tmp)* ( 255.0 / 650.0 ) ); 
 			}
 			if( pixel < 1950  + tmp && pixel >= 1300  + tmp )
 			{
-				pixel_ptr[ 0 ] = ( char )( ( pixel - 1300  - tmp ) * ( 255.0 / 650.0 ) );
+				pixel_ptr[ 0 ] = static_cast< char >( ( pixel - 1300  - tmp ) * ( 255.0 / 650.0 ) );
 				pixel_ptr[ 1 ] = 255;
 				pixel_ptr[ 2 ]  =  0; 
 			}
 			if( pixel < 2600  + tmp && pixel >= 1950 + tmp )
 			{
 				pixel_ptr[ 0 ] = 255;
-				pixel_ptr[ 1 ] = ( char )( 255 - ( pixel - 1950 - tmp )* ( 255.0 / 650.0 ) );
-				pixel_ptr[ 2 ]  = ( char )( ( pixel - 1950 - tmp) * ( 255.0 / 650.0 ) ); 
+				pixel_ptr[ 1 ] = static_cast< char >( 255 - ( pixel - 1950 - tmp )* ( 255.0 / 650.0 ) );
+				pixel_ptr[ 2 ] = static_cast< char >( ( pixel - 1950 - tmp) * ( 255.0 / 650.0 ) ); 
 			}
 			if( pixel < 3250  + tmp && pixel >= 2600 + tmp )
 			{
 				pixel_ptr[ 0 ] = 255;
 				pixel_ptr[ 1 ] = 0;
-				pixel_ptr[ 2 ]  = ( char )( 255 - ( pixel - 2600 - tmp ) * ( 255.0 / 650.0 ) ); 
+				pixel_ptr[ 2 ] = static_cast< char >( 255 - ( pixel - 2600 - tmp ) * ( 255.0 / 650.0 ) ); 
 			}
 			if( pixel < 4000  + tmp && pixel >= 3250 + tmp )
 			{
-				pixel_ptr[ 0 ] = ( char )( 255 - ( pixel - 3250  - tmp ) * ( 255.0 / 650.0 ) );
-				pixel_ptr[ 1 ] = ( char )( 255 - ( pixel - 3250  - tmp) * ( 255.0 / 650.0 ) );
-				pixel_ptr[ 2 ]  = ( char )( 255 - ( pixel - 3250  - tmp) * ( 255.0 / 650.0 ) ); 
+				pixel_ptr[ 0 ] = static_cast< char >( 255 - ( pixel - 3250  - tmp ) * ( 255.0 / 650.0 ) );
+				pixel_ptr[ 1 ] = static_cast< char >( 255 - ( pixel - 3250  - tmp) * ( 255.0 / 650.0 ) );
+				pixel_ptr[ 2 ] = static_cast< char >( 255 - ( pixel - 3250  - tmp) * ( 255.0 / 650.0 ) ); 
 			}
 
 			if( pixel >= 4000 )
