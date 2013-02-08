@@ -169,13 +169,13 @@ cv::Ptr< IplImage > convert_color_from_depth( cv::Ptr< IplImage > depth )
 			auto const pixel = ( ( ( UINT16 * )( depth->imageData +\
 				depth->widthStep * y ) )[ x ] ) >> 3;
 
-			const int tmp = 400;
+			const int tmp = 0;
 
 			if( pixel < 400 + tmp)
 			{
-				pixel_ptr[ 0 ] = 70;
-				pixel_ptr[ 1 ]  = 70;
-				pixel_ptr[ 2 ]  = 70;
+				pixel_ptr[ 0 ] = 255;
+				pixel_ptr[ 1 ]  = 255;
+				pixel_ptr[ 2 ]  = 255;
 
 			}
 
@@ -340,6 +340,8 @@ void draw()
 				//‘I‘ð—Ìˆæ‚©‚çÅ‘å‚Ì‚à‚Ì‚ÆÅ¬‚Ì‰æ‘f‚ð‘I‚ñ‚Å‚»‚Ì’l‚ÅŠ„‚é? 3000 - 3500 x / 3500
 
 				video_m.write( true, convert_color_from_depth( graph[ i ].depth_.image_ ) );
+
+				Sleep( 15 );
 
 				int key = ::cvWaitKey( 10 );
 				if ( key == 'q' ) {

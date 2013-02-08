@@ -118,7 +118,7 @@ void init( std::vector< Runtime > & runtime, bool color_view = false )
 		// OpenCVの初期設定
 		runtime[i].color_.image_ = ::cvCreateImage( cvSize( x, y ), IPL_DEPTH_8U, 4 );
 		::cvNamedWindow( runtime[ i ].color_.window_name_.c_str(),  CV_WINDOW_KEEPRATIO );
-
+		::cvNamedWindow( "depth",  CV_WINDOW_KEEPRATIO );
 
 		//深度==============================================================
 		::NuiImageResolutionToSize( NUI_IMAGE_RESOLUTION_640x480, x, y );	
@@ -277,8 +277,12 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 				// データのコピーと表示
 				memcpy( runtime.color_.image_->imageData, (BYTE*)rect->pBits, \
 					runtime.color_.image_->widthStep * runtime.color_.image_->height );
+				
+				cvFlip( runtime.color_.image_, runtime.color_.image_, 1 );
+				
 				::cvShowImage( runtime.color_.window_name_.c_str(), runtime.color_.image_ );
 				auto resized = cvCreateImage( cvSize( runtime.vw_->width(), runtime.vw_->height() ), IPL_DEPTH_8U, 4 );
+				
 				cvResize( runtime.color_.image_, resized );
 				
 				if( video_queue_writing )
@@ -303,6 +307,9 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 				memcpy( depth_image->imageData, (BYTE*)rect->pBits, \
 					depth_image->widthStep * depth_image->height );
 
+				cvFlip( depth_image, depth_image, 1 );
+
+				::cvShowImage( "depth", depth_image );
 				if( runtime.depth_.image_->nChannels == 4 )
 				{
 					for( int y = 0; y < 480; ++y )
@@ -320,7 +327,7 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 							pixel_ptr[ 2 ] = 50;
 
 
-							if( pixel < 650 && pixel >= 400)
+							if( pixel < 650 && pixel >= 10)
 							{
 								pixel_ptr[ 0 ] = 0;
 								pixel_ptr[ 1 ]  = ( char )( ( pixel - 400 ) * ( 255.0 / 250.0 ) ); 
