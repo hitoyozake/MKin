@@ -22,6 +22,9 @@
     <Filter Include="ソース ファイル\const">
       <UniqueIdentifier>{2c969e7a-8e1d-4f8a-aa54-a5bbcda0fda3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\filesystem">
+      <UniqueIdentifier>{76ae882c-9950-43c6-89bd-62a77e4dce32}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -36,6 +39,9 @@
     <ClCompile Include="video.cpp">
       <Filter>ソース ファイル\video</Filter>
     </ClCompile>
+    <ClCompile Include="filesystem.cpp">
+      <Filter>ソース ファイル\filesystem</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="precompiled.h">
@@ -49,6 +55,9 @@
     </ClInclude>
     <ClInclude Include="const.h">
       <Filter>ソース ファイル\const</Filter>
+    </ClInclude>
+    <ClInclude Include="filesystem.h">
+      <Filter>ソース ファイル\filesystem</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -77,6 +77,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="filesystem.cpp" />
     <ClCompile Include="kinect.cpp" />
     <ClCompile Include="kinect_audio.cpp" />
     <ClCompile Include="main.cpp" />
@@ -84,6 +85,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="const.h" />
+    <ClInclude Include="filesystem.h" />
     <ClInclude Include="kinect.h" />
     <ClInclude Include="precompiled.h" />
     <ClInclude Include="video.h" />
