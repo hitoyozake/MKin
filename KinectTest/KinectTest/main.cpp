@@ -14,6 +14,9 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/timer/timer.hpp>
 
+#include <boost/date_time/gregorian/gregorian.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 #include <boost/lexical_cast.hpp>
 //#include <boost/date_time/gregorian/gregorian.hpp>
 //#include <boost/date_time/posix_time/posix_time.hpp>
@@ -83,7 +86,24 @@ void set_mortor( long const angle, INuiSensor & kinect )
 //
 //}
 
-void init( std::vector< Runtime > & runtime, bool color_view = false )
+std::string generate_current_day_and_time()
+{
+	using boost::gregorian::date;
+	auto const today = boost::gregorian::day_clock::local_day();
+
+	boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
+
+	auto const now_str = boost::posix_time::to_iso_string( now );
+
+	//yyyyMMddThhmmss
+	//std::cout << boost::posix_time::to_iso_string( now ) << std::endl;
+	return now_str;
+		
+}
+
+
+
+void init( std::vector< Runtime > & runtime, std::string const & current_time, bool const color_view = false )
 {
 	using namespace std;
 	NUI_IMAGE_RESOLUTION const resolution = NUI_IMAGE_RESOLUTION_640x480;
@@ -97,7 +117,7 @@ void init( std::vector< Runtime > & runtime, bool color_view = false )
 		
 		std::string drive = "";//"F:\\recorded_data\\";
 		runtime[ i ].vw_ = boost::shared_ptr< video::vfw_manager >
-			( new video::vfw_manager( drive + to_string( i ) + "output.avi", to_string( i ) + "_output.avi", \
+			( new video::vfw_manager( drive + to_string( i ) + "_" + current_time + "_output.avi", to_string( i ) + "_" + current_time + "_output.avi", \
 			  640, 480, 1, 30, 30 * 60 * 60 * 4 ) );
 
 		runtime[ i ].color_.event_ = ::CreateEvent( 0, TRUE, FALSE, 0 );
@@ -416,6 +436,8 @@ void draw()
 {
 	using namespace std;
 
+	auto const current_time = generate_current_day_and_time();
+
 	ofstream dlog( "debugLog.txt" );
 
 	NUI_IMAGE_RESOLUTION const resolution = NUI_IMAGE_RESOLUTION_640x480;
@@ -440,7 +462,7 @@ void draw()
 		if( mode != 0 )
 			color_view = true;
 
-		init( runtime, color_view );
+		init( runtime, current_time, color_view );
 	}
 	bool continue_flag = true;
 	int count = 0;
@@ -461,13 +483,12 @@ void draw()
 		//NearModeÇÃê›íË
 		
 		string const filename_d = string( "depth_" ) + boost::lexical_cast< string >\
-			( i ) + ".txt";
+			( i ) + "_" + current_time + ".txt";
 		string const filename_c = string( "color_" ) + boost::lexical_cast< string >\
-			( i ) + ".txt";
+			( i ) +  + "_" + current_time + ".txt";
 
 		runtime[ i ].ofs_c_ = boost::shared_ptr< ofstream >( new ofstream() );
 		runtime[ i ].ofs_d_ = boost::shared_ptr< ofstream >( new ofstream() );
-
 		runtime[ i ].ofs_d_->open( filename_d, ios::binary );
 		runtime[ i ].ofs_c_->open( filename_c, ios::binary );
 
@@ -503,8 +524,6 @@ void draw()
 			}
 			input_come = false;
 		}
-
-		
 
 		//cout << "hoge" << ++count << endl;
 		int key = ::cvWaitKey( 10 );
@@ -547,7 +566,7 @@ void draw()
 	//WindowÇï¬Ç∂ÇÈ
 	::cvDestroyAllWindows();
 
-	std::cout << "FINISH" << std::endl;
+	std::cout << "PROGRAM WAS CLOSED" << std::endl;
 
 }
 

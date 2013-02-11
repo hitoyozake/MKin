@@ -125,5 +125,10 @@ namespace NewRecordingSoft
                 timerCounter = 0;
             }
         }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            debugLog.Close();
+        }
     }
 }
