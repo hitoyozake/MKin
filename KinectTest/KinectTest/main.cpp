@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <thread>
+#include <array>
 #include <fstream>
 #include <queue>
 #include <chrono>
@@ -32,12 +33,16 @@
 
 
 #include "video.h"
+#include "filesystem.h"
 
 #pragma comment( lib, "x86/Kinect10.lib" )
 #pragma comment( lib, "libboost_timer-vc110-mt-gd-1_51.lib" )
 
 
 #define NO_MINMAX
+
+namespace recording
+{
 
 struct Runtime
 {
@@ -98,7 +103,6 @@ std::string generate_current_day_and_time()
 	//yyyyMMddThhmmss
 	//std::cout << boost::posix_time::to_iso_string( now ) << std::endl;
 	return now_str;
-		
 }
 
 
@@ -301,7 +305,7 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 				cvFlip( runtime.color_.image_, runtime.color_.image_, 1 );
 				
 				::cvShowImage( runtime.color_.window_name_.c_str(), runtime.color_.image_ );
-				auto resized = cvCreateImage( cvSize( runtime.vw_->width(), runtime.vw_->height() ), IPL_DEPTH_8U, 4 );
+				cv::Ptr< IplImage > resized = cvCreateImage( cvSize( runtime.vw_->width(), runtime.vw_->height() ), IPL_DEPTH_8U, 4 );
 				
 				cvResize( runtime.color_.image_, resized );
 				
@@ -315,21 +319,25 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 				}
 				//キュー追加
 				video_queue_writing = true;
-				image_queue.push( resized );
+				//image_queue.push( resized );
 				video_queue_writing = false;
+				
+				resized.release();
 								
 			}
 			// 画像データの取得
 			if( auto rect = std::move( get_image( image_frame_depth_, "DEPTH" ) ) )
 			{
+
 				// データのコピーと表示
 				cv::Ptr< IplImage > depth_image = cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_16U, 1 );
 				memcpy( depth_image->imageData, (BYTE*)rect->pBits, \
 					depth_image->widthStep * depth_image->height );
 
 				cvFlip( depth_image, depth_image, 1 );
+				
 
-				::cvShowImage( "depth", depth_image );
+				//::cvShowImage( "depth", depth_image );
 				if( runtime.depth_.image_->nChannels == 4 )
 				{
 					for( int y = 0; y < 480; ++y )
@@ -386,19 +394,20 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 
 							if( pixel >= 4000 )
 							{
-								pixel_ptr[ 0 ] = 255;
-								pixel_ptr[ 1 ] = 255;
-								pixel_ptr[ 2 ]  = 255; 
+								pixel_ptr[ 0 ] = 140;
+								pixel_ptr[ 1 ] = 140;
+								pixel_ptr[ 2 ]  = 140; 
 							}
 						}
 					}
 					::cvShowImage( runtime.depth_.window_name_.c_str(), runtime.depth_.image_ );
+					depth_image.release();
 				}
 				else
 				{
 					::cvShowImage( runtime.depth_.window_name_.c_str(), depth_image );
 				}
-				runtime.ofs_d_->write( ( char * )rect->pBits, depth_image->widthStep * depth_image->height );
+				//runtime.ofs_d_->write( ( char * )rect->pBits, depth_image->widthStep * depth_image->height );
 			}
 
 			// カメラデータの解放
@@ -419,7 +428,9 @@ void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & read
 
 	video_end = true;
 	vw_thread.join();
-	std::cout << "Video Thread End" << std::endl;
+
+	std::cout << vw_thread.get_id();
+	std::cout << " Video Thread End" << std::endl;
 
 }
 
@@ -428,7 +439,10 @@ void end_task( vector< int > & end_sign, vector< thread > & kinect_thread_obj )
 	for( auto & it : end_sign )
 		it = 1;
 	for( auto & it : kinect_thread_obj )
+	{
 		it.join();
+		std::cout << it.get_id() << " Kinect Thread END" << std::endl;
+	}
 }
 
 
@@ -569,9 +583,19 @@ void draw()
 	std::cout << "PROGRAM WAS CLOSED" << std::endl;
 
 }
+}
 
 int main()
 {
-	draw();
+	recording::draw();
+	
+	
+	/*using namespace std;
+
+	if( auto volume = filesystem::get_last_volume_by_GB() )
+	{
+		std::cout << volume.get() << std::endl;
+	}*/
+
 	return 0;
 }

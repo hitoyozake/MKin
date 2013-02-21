@@ -20,6 +20,10 @@ namespace NewRecordingSoft
         public int timerCounter = 0;
 
         public String filename = "recorder.exe";
+        public String waveFilename = "alert.wav";
+
+
+        public System.Media.SoundPlayer wavPlayer;
 
         public Form1()
         {
@@ -43,6 +47,7 @@ namespace NewRecordingSoft
                 process.StandardInput.WriteLine( "end" );
                 //タイマーでExitを待ち続ける
                 timer1.Enabled = true;
+                //終了しない時はアラートを鳴らす
             }
         }
 
@@ -99,6 +104,8 @@ namespace NewRecordingSoft
             debugLog.WriteLine(DateTime.Now);
             debugLog.WriteLine("******************************");
 
+            wavPlayer = new System.Media.SoundPlayer(waveFilename);
+
         }
 
         private void timer1_Tick(object sender, EventArgs e)
@@ -115,6 +122,10 @@ namespace NewRecordingSoft
                 {
                     //何らかの理由で終了できない
                     process.Kill(); //本当はよろしくない
+
+                    //アラートを鳴らす
+                    wavPlayer.Play();
+
                 }
                 ++timerCounter;
             }
@@ -129,6 +140,11 @@ namespace NewRecordingSoft
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             debugLog.Close();
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            Close();
         }
     }
 }
