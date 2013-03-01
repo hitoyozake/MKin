@@ -171,56 +171,53 @@ cv::Ptr< IplImage > convert_color_from_depth( cv::Ptr< IplImage > depth )
 
 			const int tmp = 0;
 
-			if( pixel < 400 + tmp)
-			{
-				pixel_ptr[ 0 ] = 255;
-				pixel_ptr[ 1 ]  = 255;
-				pixel_ptr[ 2 ]  = 255;
+			pixel_ptr[ 0 ] = 50;
+			pixel_ptr[ 1 ] = 50;
+			pixel_ptr[ 2 ] = 50;
 
-			}
 
-			if( pixel < 650  + tmp && pixel >= 400 + tmp )
+			if( pixel < 650 && pixel >= 10)
 			{
 				pixel_ptr[ 0 ] = 0;
-				pixel_ptr[ 1 ]  = static_cast< char >( ( pixel - 400 - tmp ) * ( 255.0 / 250.0 ) ); 
+				pixel_ptr[ 1 ]  = ( char )( ( pixel - 400 ) * ( 255.0 / 250.0 ) ); 
 				pixel_ptr[ 2 ] = 255;
 			}
-			if( pixel < 1300  + tmp && pixel >= 650  + tmp )
+			if( pixel < 1300 && pixel >= 650 )
 			{
 				pixel_ptr[ 0 ] = 0;
 				pixel_ptr[ 1 ] = 255;
-				pixel_ptr[ 2 ]  =  static_cast< char >( 255 - ( pixel - 650 - tmp)* ( 255.0 / 650.0 ) ); 
+				pixel_ptr[ 2 ]  =  ( char )( 255 - ( pixel - 650 )* ( 255.0 / 650.0 ) ); 
 			}
-			if( pixel < 1950  + tmp && pixel >= 1300  + tmp )
+			if( pixel < 1950 && pixel >= 1300 )
 			{
-				pixel_ptr[ 0 ] = static_cast< char >( ( pixel - 1300  - tmp ) * ( 255.0 / 650.0 ) );
+				pixel_ptr[ 0 ] = ( char )( ( pixel - 1300 ) * ( 255.0 / 650.0 ) );
 				pixel_ptr[ 1 ] = 255;
 				pixel_ptr[ 2 ]  =  0; 
 			}
-			if( pixel < 2600  + tmp && pixel >= 1950 + tmp )
+			if( pixel < 2600 && pixel >= 1950 )
 			{
 				pixel_ptr[ 0 ] = 255;
-				pixel_ptr[ 1 ] = static_cast< char >( 255 - ( pixel - 1950 - tmp )* ( 255.0 / 650.0 ) );
-				pixel_ptr[ 2 ] = static_cast< char >( ( pixel - 1950 - tmp) * ( 255.0 / 650.0 ) ); 
+				pixel_ptr[ 1 ] = ( char )( 255 - ( pixel - 1950 )* ( 255.0 / 650.0 ) );
+				pixel_ptr[ 2 ]  = ( char )( ( pixel - 1950 ) * ( 255.0 / 650.0 ) ); 
 			}
-			if( pixel < 3250  + tmp && pixel >= 2600 + tmp )
+			if( pixel < 3250 && pixel >= 2600 )
 			{
 				pixel_ptr[ 0 ] = 255;
 				pixel_ptr[ 1 ] = 0;
-				pixel_ptr[ 2 ] = static_cast< char >( 255 - ( pixel - 2600 - tmp ) * ( 255.0 / 650.0 ) ); 
+				pixel_ptr[ 2 ]  = ( char )( 255 - ( pixel - 2600 ) * ( 255.0 / 650.0 ) ); 
 			}
-			if( pixel < 4000  + tmp && pixel >= 3250 + tmp )
+			if( pixel < 4000 && pixel >= 3250 )
 			{
-				pixel_ptr[ 0 ] = static_cast< char >( 255 - ( pixel - 3250  - tmp ) * ( 255.0 / 650.0 ) );
-				pixel_ptr[ 1 ] = static_cast< char >( 255 - ( pixel - 3250  - tmp) * ( 255.0 / 650.0 ) );
-				pixel_ptr[ 2 ] = static_cast< char >( 255 - ( pixel - 3250  - tmp) * ( 255.0 / 650.0 ) ); 
+				pixel_ptr[ 0 ] = static_cast< char >( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) );
+				pixel_ptr[ 1 ] = static_cast< char >( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) );
+				pixel_ptr[ 2 ]  = static_cast< char >( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) ); 
 			}
 
 			if( pixel >= 4000 )
 			{
-				pixel_ptr[ 0 ] = 255;
-				pixel_ptr[ 1 ] = 255;
-				pixel_ptr[ 2 ]  = 255; 
+				pixel_ptr[ 0 ] = 140;
+				pixel_ptr[ 1 ] = 140;
+				pixel_ptr[ 2 ] = 140; 
 			}
 		}
 	}
@@ -250,7 +247,7 @@ void draw()
 			( i ) + ".txt";
 
 		ifs_depth[ i ].open( filename_d, ios::binary );
-		ifs_color[ i ].open( filename_c, ios::binary );
+		//ifs_color[ i ].open( filename_c, ios::binary );
 	}
 
 	try {
@@ -291,7 +288,7 @@ void draw()
 
 					// データのコピーと表示
 
-					ifs_color[ i ].read( graph[ i ].color_.image_->imageData, 640 * 480 * 4 ); 
+					//ifs_color[ i ].read( graph[ i ].color_.image_->imageData, 640 * 480 * 4 ); 
 
 					Sleep( 1 );
 
@@ -335,15 +332,15 @@ void draw()
 
 
 				::cvShowImage( graph[ i ].depth_.window_name_.c_str(), graph[ i ].depth_.image_ );
-				::cvShowImage( graph[ i ].color_.window_name_.c_str(), graph[ i ].color_.image_ );
+				//::cvShowImage( graph[ i ].color_.window_name_.c_str(), graph[ i ].color_.image_ );
 
 				//選択領域から最大のものと最小の画素を選んでその値で割る? 3000 - 3500 x / 3500
+				auto c = convert_color_from_depth( graph[ i ].depth_.image_ );
+				video_m.write( true, c );
+				c.release();
+				//Sleep( 15 );
 
-				video_m.write( true, convert_color_from_depth( graph[ i ].depth_.image_ ) );
-
-				Sleep( 15 );
-
-				int key = ::cvWaitKey( 10 );
+				int key = ::cvWaitKey( 20 );
 				if ( key == 'q' ) {
 					continue_flag = false;
 				}
