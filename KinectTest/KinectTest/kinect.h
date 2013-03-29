@@ -8,7 +8,9 @@ namespace kinect
 	{
 	public:
 		kinect_manager() : id_( -1 )
-		{}
+		{
+			color_writable_ = cvCreateImage( cvSize( 640, 480 ), 3, 4 );
+		}
 
 		bool is_near_mode() const;
 		void set_near_mode();
@@ -26,6 +28,11 @@ namespace kinect
 		boost::optional< NUI_LOCKED_RECT > get_image( NUI_IMAGE_FRAME const & image_frame );
 
 		int id_;
+		bool write_flag_;	//“¯Šú‚É¬Œ÷‚µ‚Ä‚¢‚é‚Ì‚È‚ç‘‚«‚İok
+		cv::Ptr< IplImage > color_writable_;
+		cv::Ptr< IplImage > depth_writable_;
+
+		void write_flag( bool const flag );
 
 		struct kinect
 		{

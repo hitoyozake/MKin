@@ -27,10 +27,10 @@ namespace video
 
 		int width() const{ return width_; }
 		int height() const{ return height_; }
-
-	private:
+		
 		void close();
 
+	private:
 		AVISTREAMINFO asi_;
 		BITMAPINFOHEADER bmp_ih_;
 		AVICOMPRESSOPTIONS opt_;
@@ -41,7 +41,7 @@ namespace video
 		int frame_count_;
 		int total_frames_;
 		int width_, height_;
-
+		bool closed_;
 		std::vector< tagRGBQUAD > image_;
 	};
 }

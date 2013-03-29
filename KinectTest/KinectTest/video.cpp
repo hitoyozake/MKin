@@ -5,13 +5,19 @@ namespace video
 {
 	void vfw_manager::reset()
 	{
+		if( ! closed_ )
+		{
+			close();
+		}
+
 		avi_stream_ = nullptr;
 		avi_tmp_stream_ = nullptr;
+		closed_ = true;
 	}
 
 	vfw_manager::vfw_manager( std::string const & filename, std::string const & title, int const width, \
 		int const height, int const time_scale, int const frame_rate,
-		int const total_frame_count ) : frame_count_( 0 ), total_frames_( total_frame_count )
+		int const total_frame_count ) : frame_count_( 0 ), total_frames_( total_frame_count ), closed_( true )
 	{
 		AVIFileInit();
 
@@ -146,6 +152,8 @@ namespace video
 		width_ = width;
 		height_ = height;
 		image_.resize( width * height );
+
+		closed_ = false;
 	}
 
 	bool vfw_manager::write( bool const reverse, cv::Ptr< IplImage > image )
@@ -201,7 +209,10 @@ namespace video
 	}
 	vfw_manager::~vfw_manager()
 	{
-		close();
+		if( ! closed_ )
+		{
+			close();
+		}
 	}
 
 	void vfw_manager::close()
@@ -224,5 +235,8 @@ namespace video
 
 		ICCompressorFree( std::addressof( comp_vars_ ) );
 		AVIFileExit();
+
+		closed_ = true;
+		std::cout << "AVI WAS SAVED" << std::endl;
 	}
 }

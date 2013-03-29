@@ -9,6 +9,9 @@
 #include <boost/optional.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include <boost/regex.hpp>
+#include <boost/filesystem.hpp>
+
 #include <boost/lexical_cast.hpp>
 // NuiApi.hの前にWindows.hをインクルードする
 #include <Windows.h>
@@ -182,38 +185,38 @@ cv::Ptr< IplImage > convert_color_from_depth( cv::Ptr< IplImage > depth )
 				pixel_ptr[ 1 ]  = ( char )( ( pixel - 400 ) * ( 255.0 / 250.0 ) ); 
 				pixel_ptr[ 2 ] = 255;
 			}
-			if( pixel < 1300 && pixel >= 650 )
+			if( pixel < 1250 && pixel >= 650 )
 			{
 				pixel_ptr[ 0 ] = 0;
 				pixel_ptr[ 1 ] = 255;
-				pixel_ptr[ 2 ]  =  ( char )( 255 - ( pixel - 650 )* ( 255.0 / 650.0 ) ); 
+				pixel_ptr[ 2 ]  =  ( char )( 255 - ( pixel - 650 )* ( 255.0 / 600.0 ) ); 
 			}
-			if( pixel < 1950 && pixel >= 1300 )
+			if( pixel < 1750 && pixel >= 1250 )
 			{
-				pixel_ptr[ 0 ] = ( char )( ( pixel - 1300 ) * ( 255.0 / 650.0 ) );
+				pixel_ptr[ 0 ] = ( char )( ( pixel - 1250 ) * ( 255.0 / 500.0 ) );
 				pixel_ptr[ 1 ] = 255;
 				pixel_ptr[ 2 ]  =  0; 
 			}
-			if( pixel < 2600 && pixel >= 1950 )
+			if( pixel < 2250 && pixel >= 1750 )
 			{
 				pixel_ptr[ 0 ] = 255;
-				pixel_ptr[ 1 ] = ( char )( 255 - ( pixel - 1950 )* ( 255.0 / 650.0 ) );
-				pixel_ptr[ 2 ]  = ( char )( ( pixel - 1950 ) * ( 255.0 / 650.0 ) ); 
+				pixel_ptr[ 1 ] = ( char )( 255 - ( pixel - 1750 )* ( 255.0 / 500.0 ) );
+				pixel_ptr[ 2 ]  = ( char )( ( pixel - 1750 ) * ( 255.0 / 500.0 ) ); 
 			}
-			if( pixel < 3250 && pixel >= 2600 )
+			if( pixel < 2750 && pixel >= 2250 )
 			{
 				pixel_ptr[ 0 ] = 255;
 				pixel_ptr[ 1 ] = 0;
-				pixel_ptr[ 2 ]  = ( char )( 255 - ( pixel - 2600 ) * ( 255.0 / 650.0 ) ); 
+				pixel_ptr[ 2 ]  = ( char )( 255 - ( pixel - 2250 ) * ( 255.0 / 500.0 ) ); 
 			}
-			if( pixel < 4000 && pixel >= 3250 )
+			if( pixel < 3250 && pixel >= 2750 )
 			{
-				pixel_ptr[ 0 ] = static_cast< char >( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) );
-				pixel_ptr[ 1 ] = static_cast< char >( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) );
-				pixel_ptr[ 2 ]  = static_cast< char >( 255 - ( pixel - 3250 ) * ( 255.0 / 650.0 ) ); 
+				pixel_ptr[ 0 ] = static_cast< char >( 255 - ( pixel - 2750 ) * ( 255.0 / 500.0 ) );
+				pixel_ptr[ 1 ] = static_cast< char >( 255 - ( pixel - 2750 ) * ( 255.0 / 500.0 ) );
+				pixel_ptr[ 2 ]  = static_cast< char >( 255 - ( pixel - 2750 ) * ( 255.0 / 500.0 ) ); 
 			}
 
-			if( pixel >= 4000 )
+			if( pixel >= 3250 )
 			{
 				pixel_ptr[ 0 ] = 140;
 				pixel_ptr[ 1 ] = 140;
@@ -224,27 +227,81 @@ cv::Ptr< IplImage > convert_color_from_depth( cv::Ptr< IplImage > depth )
 	return color;
 }
 
+std::vector< std::string > get_filelist_from_current_dir()
+{
+	namespace fs = boost::filesystem;
+
+	std::vector< std::string > result;
+
+	const fs::path path( fs::current_path() );
+	fs::directory_iterator end;
+	for( fs::directory_iterator i( fs::current_path() ); i != end; ++i )
+	{
+
+		std::cout << i->path() << std::endl;
+
+		if( ! fs::is_directory( i->path() ) )
+		{
+			result.push_back( i->path().string() );
+		}
+	}
+
+	return result;
+}
+
+std::vector< std::string > get_recorded_filelist( std::vector< std::string > const & filelist )
+{
+	std::vector< std::string > result;
+
+	using boost::regex;
+
+	regex reg_ex( "([0-9]*[a-z]*[A-Z]*)*.txt$");
+
+	boost::smatch match;
+
+	for( auto & i : filelist )
+	{
+		cout << i << endl;
+		//正規表現でデータファイルを探す
+		//if( boost::regex_search( ( std::string )( i.c_str() ), match, reg_ex ) )
+		if( i.find( "depth" ) != std::string::npos )
+		{
+			std::cout << i << std::endl;
+
+			result.push_back( i );
+		}
+	}
+	return result;
+}
+
+
 
 void draw()
 {
 	using namespace std;
 	int const kinect_count = 1;
 	bool const use_mouse = false;
-	vector< ifstream >  ifs_depth( kinect_count );
-	vector< ifstream >  ifs_color( kinect_count );
+	vector< ifstream >  ifs_depth;//( kinect_count );
+	vector< ifstream >  ifs_color;//( kinect_count );
+
+	std::ifstream ifs_timestamp( "debug_log.txt");
+
 	mouse_info mouse;
 	//size_t filesize = ( size_t )ifs.seekg( 0, std::ios::end).tellg();
-	video::vfw_manager video_m( "output.avi", "output.avi", 640, 480, 1, 30, 30 * 60 * 60 );
+	//video::vfw_manager video_m( "output.avi", "output.avi", 640, 480, 1, 30, 30 * 60 * 60 );
 	//ifs.seekg( 0, std::ios::beg );
 
 	//std::cout << "size:" << filesize << std::endl;
 
-	for( int i = 0; i < ifs_depth.size(); ++i )
+	auto const filelist = get_recorded_filelist( get_filelist_from_current_dir() );
+
+	for( int i = 0; i < filelist.size(); ++i )
 	{
-		auto const filename_d = string( "depth_" ) + boost::lexical_cast< string >\
-			( i ) + ".txt";
-		auto const filename_c = string( "color_" ) + boost::lexical_cast< string >\
-			( i ) + ".txt";
+		auto const filename_d = filelist[ i ];
+		//auto const filename_c = string( "color_" ) + boost::lexical_cast< string >\
+		( i ) + ".txt";
+
+		ifs_depth.push_back( ifstream() );
 
 		ifs_depth[ i ].open( filename_d, ios::binary );
 		//ifs_color[ i ].open( filename_c, ios::binary );
@@ -252,7 +309,7 @@ void draw()
 
 	try {
 
-		std::vector< graph > graph( KINECT_NUM );
+		std::vector< graph > graph( ifs_depth.size() );
 
 		bool continue_flag = true;
 		int count = 0;
@@ -263,9 +320,10 @@ void draw()
 
 		int x1 = 0, x2 = 10, y1 = 0, y2 = 10;
 
-		while ( continue_flag )
+		bool pause = false;
+
+		while ( ( graph.size() > 0 ) && continue_flag )
 		{
-			
 			{
 				if( mouse.flag_ )
 				{
@@ -279,73 +337,97 @@ void draw()
 
 			cvSetMouseCallback( "MultiKinectPlayer[1] Depth", on_mouse, & mouse );
 
-			for( size_t i = 0; i < graph.size(); ++i )
+			if( ! pause )
 			{
-				ifs_depth[ i ].read( graph[ i ].depth_.image_->imageData, 640 * 480 * 2 ); 
-				//if( use_mouse )
+
+				for( size_t i = 0; i < graph.size(); ++i )
 				{
-					// 画像データの取得
-
-					// データのコピーと表示
-
-					//ifs_color[ i ].read( graph[ i ].color_.image_->imageData, 640 * 480 * 4 ); 
-
-					Sleep( 1 );
-
-					if( ifs_depth[ i ].eof() )
-						continue_flag = false;
-
-					unsigned short max_value = 3100, min_value = 655300;
-
-					for( int h = y1; h < y2; ++h )
+					ifs_depth[ i ].read( graph[ i ].depth_.image_->imageData, 640 * 480 * 2 ); 
+					//if( use_mouse )
 					{
-						for( int w = x1; w < x2; ++w )
+						// 画像データの取得
+
+						// データのコピーと表示
+
+						//ifs_color[ i ].read( graph[ i ].color_.image_->imageData, 640 * 480 * 4 ); 
+
+						Sleep( 1 );
+
+						if( ifs_depth[ i ].eof() )
+							continue_flag = false;
+
+						unsigned short max_value = 3100, min_value = 655300;
+
+						for( int h = y1; h < y2; ++h )
 						{
-							unsigned short pixel = ( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
-								graph[ i ].depth_.image_->widthStep * h ) )[ w ];
-							//cout << pixel << endl;
+							for( int w = x1; w < x2; ++w )
+							{
+								unsigned short pixel = ( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
+									graph[ i ].depth_.image_->widthStep * h ) )[ w ];
+								//cout << pixel << endl;
 
 
-							if( ( y2 - y1 ) * ( x2 - x1 ) < 50 )
-								cout << pixel / 8 << endl;
+								if( ( y2 - y1 ) * ( x2 - x1 ) < 50 )
+									std::cout << pixel / 8 << endl;
 
+							}
 						}
-					}
 
-					for( int h = y1; h < y2; ++h )
-					{
-						for( int w = x1; w < x2; ++w )
+						for( int h = y1; h < y2; ++h )
 						{
-							( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
-								graph[ i ].depth_.image_->widthStep * h ) )[ w ] -= min_value;
-
-							//代入
-							( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
-								graph[ i ].depth_.image_->widthStep * h ) )[ w ] = 
+							for( int w = x1; w < x2; ++w )
+							{
 								( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
-								graph[ i ].depth_.image_->widthStep * h ) )[ w ] * 65530.0
-								/ ( max_value - min_value );
+									graph[ i ].depth_.image_->widthStep * h ) )[ w ] -= min_value;
+
+								//代入
+								( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
+									graph[ i ].depth_.image_->widthStep * h ) )[ w ] = 
+									( ( UINT16 * )( graph[ i ].depth_.image_->imageData +\
+									graph[ i ].depth_.image_->widthStep * h ) )[ w ] * 65530.0
+									/ ( max_value - min_value );
+							}
 						}
+
 					}
 
-				}
+					
+					//選択領域から最大のものと最小の画素を選んでその値で割る? 3000 - 3500 x / 3500
+					auto c = convert_color_from_depth( graph[ i ].depth_.image_ );
+					//video_m.write( true, c );
+					::cvShowImage( graph[ i ].depth_.window_name_.c_str(), c );
+					//::cvShowImage( graph[ i ].depth_.window_name_.c_str(), graph[ i ].depth_.image_ );
+					//::cvShowImage( graph[ i ].color_.window_name_.c_str(), graph[ i ].color_.image_ );
 
+					cout << "frame : " << ++count << endl;
+					c.release();
 
-				::cvShowImage( graph[ i ].depth_.window_name_.c_str(), graph[ i ].depth_.image_ );
-				//::cvShowImage( graph[ i ].color_.window_name_.c_str(), graph[ i ].color_.image_ );
+					if( ! ( ifs_timestamp.fail() || ifs_timestamp.eof() ) )
+					{
+						double time;
+						ifs_timestamp >> time ;
 
-				//選択領域から最大のものと最小の画素を選んでその値で割る? 3000 - 3500 x / 3500
-				auto c = convert_color_from_depth( graph[ i ].depth_.image_ );
-				video_m.write( true, c );
-				c.release();
-				//Sleep( 15 );
+						if( time > 0.0 && time < 10.0 )
+						{
+							Sleep( time * 1000 );
+						}
+						else
+						{
+						}
 
-				int key = ::cvWaitKey( 20 );
-				if ( key == 'q' ) {
-					continue_flag = false;
+					}
+
 				}
 			}
-			cout << "frame : " << ++count << endl;
+			int key = ::cvWaitKey( 20 );
+			if ( key == 'q' ) {
+				continue_flag = false;
+			}
+			else if( key == 'p' )
+			{
+				pause = ! pause;
+			}
+
 
 		}
 

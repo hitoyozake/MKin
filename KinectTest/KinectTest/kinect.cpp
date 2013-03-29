@@ -13,6 +13,12 @@ namespace kinect
 			< decltype( rect ) >( std::move( rect ) );
 	}
 
+	void kinect_manager::write_flag( bool const flag )
+	{
+		write_flag_ = flag;
+	}
+
+
 	cv::Ptr< IplImage > kinect_manager::get_color_image_from_pre_frame() const
 	{
 		return kinect_.color_.image_;
@@ -102,6 +108,7 @@ namespace kinect
 			//color‚Ì‰Šú‰»
 			init_stream( NUI_IMAGE_TYPE_COLOR, color_resolution,
 				color_.image_, color_.stream_handle_, create_window, true );
+
 		}
 		{
 			auto const depth_resolution = \
