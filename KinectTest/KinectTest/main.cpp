@@ -303,27 +303,25 @@ namespace recording
 				if( ! image_get_succeeded )
 				{
 					//if failed then write pre frame
-						cvResize( runtime.color_.image_, resized );
+					cvResize( runtime.color_.image_, resized );
 
-						if( video_queue_writing )
+					if( video_queue_writing )
+					{
+						//スピン待機
+						while( video_queue_writing )
 						{
-							//スピン待機
-							while( video_queue_writing )
-							{
-								Sleep( 1 );
-							}
+							Sleep( 1 );
 						}
-						//キュー追加
-						video_queue_writing = true;
-						image_queue.push( resized );
-						video_queue_writing = false;
+					}
+					//キュー追加
+					video_queue_writing = true;
+					image_queue.push( resized );
+					video_queue_writing = false;
 
-						resized.release();
+					//resized.release();
 
 					runtime.ofs_d_->write( depth_image->imageData, depth_image->widthStep * depth_image->height );
-		
-					Sleep( 5 );
-
+					Sleep( 400 );
 				}
 				else 
 				{ 
@@ -353,13 +351,12 @@ namespace recording
 						image_queue.push( resized );
 						video_queue_writing = false;
 
-						resized.release();
+						//resized.release();
 
 					}
 					// 画像データの取得
 					if( auto rect = std::move( get_image( image_frame_depth_, "DEPTH" ) ) )
 					{
-
 						// データのコピーと表示
 						memcpy( depth_image->imageData, (BYTE*)rect->pBits, \
 							depth_image->widthStep * depth_image->height );
