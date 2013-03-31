@@ -303,21 +303,21 @@ namespace recording
 				if( ! image_get_succeeded )
 				{
 					//if failed then write pre frame
-					cvResize( runtime.color_.image_, resized );
+					//cvResize( runtime.color_.image_, resized );
 
-					if( video_queue_writing )
-					{
-						//スピン待機
-						while( video_queue_writing )
-						{
-							Sleep( 1 );
-						}
-					}
-					//キュー追加
-					video_queue_writing = true;
-					image_queue.push( resized );
-					video_queue_writing = false;
-
+					//if( video_queue_writing )
+					//{
+					//	//スピン待機
+					//	while( video_queue_writing )
+					//	{
+					//		Sleep( 1 );
+					//	}
+					//}
+					////キュー追加
+					//video_queue_writing = true;
+					//image_queue.push( resized );
+					//video_queue_writing = false;
+					runtime.ofs_c_->write( runtime.color_.image_->imageData, runtime.color_.image_->widthStep * runtime.color_.image_->height );
 					//resized.release();
 
 					runtime.ofs_d_->write( depth_image->imageData, depth_image->widthStep * depth_image->height );
@@ -336,21 +336,21 @@ namespace recording
 
 						::cvShowImage( runtime.color_.window_name_.c_str(), runtime.color_.image_ );
 
-						cvResize( runtime.color_.image_, resized );
+						//cvResize( runtime.color_.image_, resized );
 
-						if( video_queue_writing )
-						{
-							//スピン待機
-							while( video_queue_writing )
-							{
-								Sleep( 1 );
-							}
-						}
-						//キュー追加
-						video_queue_writing = true;
-						image_queue.push( resized );
-						video_queue_writing = false;
-
+						//if( video_queue_writing )
+						//{
+						//	//スピン待機
+						//	while( video_queue_writing )
+						//	{
+						//		Sleep( 1 );
+						//	}
+						//}
+						////キュー追加
+						//video_queue_writing = true;
+						//image_queue.push( resized );
+						//video_queue_writing = false;
+						runtime.ofs_c_->write( runtime.color_.image_->imageData, runtime.color_.image_->widthStep * runtime.color_.image_->height );
 						//resized.release();
 
 					}
@@ -373,7 +373,6 @@ namespace recording
 									auto * pixel_ptr = & runtime.depth_.image_->imageData[ x * 4 + 640 * y * 4 ];
 									auto const pixel = ( ( UINT16 * )( depth_image->imageData +\
 										depth_image->widthStep * y ) )[ x ] / 8;
-
 
 									pixel_ptr[ 0 ] = 50;
 									pixel_ptr[ 1 ] = 50;
@@ -432,7 +431,7 @@ namespace recording
 						{
 							::cvShowImage( runtime.depth_.window_name_.c_str(), depth_image );
 						}
-						runtime.ofs_d_->write( ( char * )rect->pBits, depth_image->widthStep * depth_image->height );
+						runtime.ofs_d_->write( ( char * )depth_image->imageData, depth_image->widthStep * depth_image->height );
 					}
 
 					// カメラデータの解放
@@ -526,6 +525,8 @@ namespace recording
 		{
 			//NearModeの設定
 
+			string const drive = "F:\\recorded_data\\";
+
 			string const filename_d = string( "depth_" ) + "_" + current_time  + boost::lexical_cast< string >\
 				( i ) + ".txt";
 			string const filename_c = string( "color_" ) +  "_" + current_time + boost::lexical_cast< string >\
@@ -537,7 +538,7 @@ namespace recording
 			runtime[ i ].ofs_c_ = boost::shared_ptr< ofstream >( new ofstream() );
 			runtime[ i ].ofs_d_ = boost::shared_ptr< ofstream >( new ofstream() );
 			runtime[ i ].ofs_d_->open( filename_d, ios::binary );
-			runtime[ i ].ofs_c_->open( filename_c, ios::binary );
+			runtime[ i ].ofs_c_->open( drive + filename_c, ios::binary );
 			
 			runtime[ i ].id_ = i;
 

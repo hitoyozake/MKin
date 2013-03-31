@@ -282,9 +282,9 @@ void draw()
 	int const kinect_count = 1;
 	bool const use_mouse = false;
 	vector< ifstream >  ifs_depth;//( kinect_count );
-	vector< ifstream >  ifs_color;//( kinect_count );
+	vector< ifstream >  ifs_color( 1 );//( kinect_count );
 
-	std::ifstream ifs_timestamp( "debug_log.txt");
+	//std::ifstream ifs_timestamp( "debug_log.txt");
 
 	mouse_info mouse;
 	//size_t filesize = ( size_t )ifs.seekg( 0, std::ios::end).tellg();
@@ -295,7 +295,7 @@ void draw()
 
 	auto const filelist = get_recorded_filelist( get_filelist_from_current_dir() );
 
-	for( int i = 0; i < filelist.size(); ++i )
+	for( int i = 0; i < 1 + 0 * filelist.size(); ++i )
 	{
 		auto const filename_d = filelist[ i ];
 		//auto const filename_c = string( "color_" ) + boost::lexical_cast< string >\
@@ -306,6 +306,7 @@ void draw()
 		ifs_depth[ i ].open( filename_d, ios::binary );
 		//ifs_color[ i ].open( filename_c, ios::binary );
 	}
+	ifs_color[ 0 ].open( "color_0.txt", ios::binary  );
 
 	try {
 
@@ -343,6 +344,9 @@ void draw()
 				for( size_t i = 0; i < graph.size(); ++i )
 				{
 					ifs_depth[ i ].read( graph[ i ].depth_.image_->imageData, 640 * 480 * 2 ); 
+
+					ifs_color[ i ].read( graph[ i ].color_.image_->imageData, 640 * 480 * 4 ); 
+
 					//if( use_mouse )
 					{
 						// 画像データの取得
@@ -395,27 +399,30 @@ void draw()
 					//選択領域から最大のものと最小の画素を選んでその値で割る? 3000 - 3500 x / 3500
 					auto c = convert_color_from_depth( graph[ i ].depth_.image_ );
 					//video_m.write( true, c );
-					::cvShowImage( graph[ i ].depth_.window_name_.c_str(), c );
+					::cvShowImage( graph[ i ].depth_.window_name_.c_str(), graph[ i ].depth_.image_ );
+					
+					//::cvShowImage( graph[ i ].depth_.window_name_.c_str(), c );
+					::cvShowImage( graph[ i ].color_.window_name_.c_str(), graph[ i ].color_.image_ );
 					//::cvShowImage( graph[ i ].depth_.window_name_.c_str(), graph[ i ].depth_.image_ );
 					//::cvShowImage( graph[ i ].color_.window_name_.c_str(), graph[ i ].color_.image_ );
 
 					cout << "frame : " << ++count << endl;
 					c.release();
 
-					if( ! ( ifs_timestamp.fail() || ifs_timestamp.eof() ) )
-					{
-						double time;
-						ifs_timestamp >> time ;
+					//if( ! ( ifs_timestamp.fail() || ifs_timestamp.eof() ) )
+					//{
+					//	double time;
+					//	ifs_timestamp >> time ;
 
-						if( time > 0.0 && time < 10.0 )
-						{
-							Sleep( time * 1000 );
-						}
-						else
-						{
-						}
+					//	if( time > 0.0 && time < 10.0 )
+					//	{
+					//		//Sleep( time * 1000 );
+					//	}
+					//	else
+					//	{
+					//	}
 
-					}
+					//}
 
 				}
 			}
