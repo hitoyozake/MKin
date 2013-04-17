@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include <array>
-#include <thread>
+//#include <thread>
 
 #include <fstream>
 #include <boost/optional.hpp>
@@ -19,12 +19,12 @@
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <glut.h>
 
-#include "../KinectTest/video.h"
-#include "../KinectTest/video.cpp"
-
-
+#include "pcl_manager.h"
 #define NO_MINMAX
+
+#pragma comment( lib, "glut32.lib" )
 
 int const KINECT_NUM = 1;
 
@@ -358,16 +358,14 @@ std::vector< std::string > get_recorded_filelist( std::vector< std::string > con
 
 	boost::smatch match;
 
-	for( auto & i : filelist )
+	for( int i = 0; i < filelist.size(); ++i )
 	{
-		cout << i << endl;
+		//cout << i << endl;
 		//正規表現でデータファイルを探す
 		//if( boost::regex_search( ( std::string )( i.c_str() ), match, reg_ex ) )
-		if( i.find( "depth" ) != std::string::npos )
+		if( filelist[ i ].find( "depth" ) != std::string::npos )
 		{
-			std::cout << i << std::endl;
-
-			result.push_back( i );
+			result.push_back( filelist[ i ] );
 		}
 	}
 	return result;
@@ -413,7 +411,7 @@ void draw()
 
 		bool continue_flag = true;
 		int count = 0;
-
+		
 		long now_angle = 0;
 
 		init( graph );
@@ -421,6 +419,8 @@ void draw()
 		int x1 = 0, x2 = 10, y1 = 0, y2 = 10;
 
 		bool pause = false;
+		pcl_manager pcl_mn;
+		bool first_time = true;
 
 		IplImage * mod_color = cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_8U, 4  );
 
@@ -450,40 +450,30 @@ void draw()
 				{
 					ifs_depth[ i ].read( graph[ i ].depth_.image_->imageData, 640 * 480 * 2 ); 
 
-					ifs_color[ i ].read( graph[ i ].color_.image_->imageData, 640 * 480 * 4 ); 
+					if( count % 2 == 0 )
+						ifs_color[ i ].read( graph[ i ].color_.image_->imageData, 640 * 480 * 4 ); 
 
 					if( ifs_depth[ i ].eof() )
 							continue_flag = false;
 
-					auto c = convert_color_from_depth( graph[ i ].depth_.image_ );
-
-					if( use_mouse )
+					if( first_time )
 					{
-						// 画像データの取得
+						first_time = false;
 
-						// データのコピーと表示
-
-						//ifs_color[ i ].read( graph[ i ].color_.image_->imageData, 640 * 480 * 4 ); 
-
-						Sleep( 100 );
-						cvCopy( c, mod_color );
-						color_view( graph[ i ].depth_.image_, mod_color, x1, x2, y1, y2 );
-
+						pcl_mn.init( pcl_mn.convert_RGB_and_depth_to_cloud( \
+							graph[ i ].color_.image_,
+							graph[ i ].depth_.image_ ), "hoge" );
 					}
-
+					else
+					{
+						pcl_mn.update( pcl_mn.convert_RGB_and_depth_to_cloud( \
+							graph[ i ].color_.image_,
+							graph[ i ].depth_.image_ ), "hoge" );
+					}
 					
-					//選択領域から最大のものと最小の画素を選んでその値で割る? 3000 - 3500 x / 3500
-					//video_m.write( true, c );
-					//::cvShowImage( graph[ i ].depth_.window_name_.c_str(), graph[ i ].depth_.image_ );
-					
-					::cvShowImage( graph[ i ].depth_.window_name_.c_str(), c );
-					::cvShowImage( graph[ i ].color_.window_name_.c_str(), graph[ i ].color_.image_ );//mod_color );
-					//::cvShowImage( graph[ i ].depth_.window_name_.c_str(), graph[ i ].depth_.image_ );
-					//::cvShowImage( graph[ i ].color_.window_name_.c_str(), graph[ i ].color_.image_ );
 
 					cout << "frame : " << ++count << endl;
-					c.release();
-
+					
 					//if( ! ( ifs_timestamp.fail() || ifs_timestamp.eof() ) )
 					//{
 					//	double time;

@@ -258,9 +258,16 @@ namespace recording
 
 		cv::Ptr< IplImage > depth_image = cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_16U, 1 );
 		cv::Ptr< IplImage > resized = cvCreateImage( cvSize( runtime.vw_->width(), runtime.vw_->height() ), IPL_DEPTH_8U, 4 );
-
+		cv::Ptr< IplImage > color_320x240 = cvCreateImage( cvSize( 320, 240 ), IPL_DEPTH_8U, 4 );
 		cout << "test" << endl;
 
+		// カメラデータの取得用フレームオブジェクト
+		NUI_IMAGE_FRAME image_frame_depth_;
+		NUI_IMAGE_FRAME image_frame_color_;
+
+		NUI_IMAGE_FRAME * image_frame_depth = & image_frame_depth_;
+		NUI_IMAGE_FRAME * image_frame_color = & image_frame_color_;
+	
 		while( end_sign == 0 )
 		{
 			while( go_sign == 1 )
@@ -273,13 +280,6 @@ namespace recording
 				// StreamFlagsでとりあえず抑制
 				::WaitForSingleObject( runtime.color_.stream_handle_, INFINITE );
 				::WaitForSingleObject( runtime.depth_.stream_handle_, INFINITE );
-
-				// カメラデータの取得
-				NUI_IMAGE_FRAME image_frame_depth_;
-				NUI_IMAGE_FRAME image_frame_color_;
-
-				NUI_IMAGE_FRAME * image_frame_depth = & image_frame_depth_;
-				NUI_IMAGE_FRAME * image_frame_color = & image_frame_color_;
 
 				bool image_get_succeeded = true;
 
@@ -321,7 +321,7 @@ namespace recording
 					//resized.release();
 
 					runtime.ofs_d_->write( depth_image->imageData, depth_image->widthStep * depth_image->height );
-					Sleep( 400 );
+					Sleep( 600 );
 				}
 				else 
 				{ 
@@ -350,6 +350,8 @@ namespace recording
 						//video_queue_writing = true;
 						//image_queue.push( resized );
 						//video_queue_writing = false;
+						//cvResize( runtime.color_.image_, color_320x240 );
+						//runtime.ofs_c_->write( color_320x240->imageData, color_320x240->widthStep * color_320x240->height );
 						runtime.ofs_c_->write( runtime.color_.image_->imageData, runtime.color_.image_->widthStep * runtime.color_.image_->height );
 						//resized.release();
 
@@ -363,6 +365,7 @@ namespace recording
 						cvFlip( depth_image, depth_image, 1 );
 
 						//::cvShowImage( "depth", depth_image );
+#pragma region 色変換
 						if( runtime.depth_.image_->nChannels == 4 )
 						{
 							for( int y = 0; y < 480; ++y )
@@ -424,11 +427,13 @@ namespace recording
 									}
 								}
 							}
+#pragma endregion
 							::cvShowImage( runtime.depth_.window_name_.c_str(), runtime.depth_.image_ );
 
 						}
 						else
 						{
+
 							::cvShowImage( runtime.depth_.window_name_.c_str(), depth_image );
 						}
 						runtime.ofs_d_->write( ( char * )depth_image->imageData, depth_image->widthStep * depth_image->height );
@@ -525,7 +530,8 @@ namespace recording
 		{
 			//NearModeの設定
 
-			string const drive = "F:\\recorded_data\\";
+			//string const drive = "D:\\recorded_data\\";
+			string const drive2 = "F:\\recorded_data\\";
 
 			string const filename_d = string( "depth_" ) + "_" + current_time  + boost::lexical_cast< string >\
 				( i ) + ".txt";
@@ -537,8 +543,9 @@ namespace recording
 
 			runtime[ i ].ofs_c_ = boost::shared_ptr< ofstream >( new ofstream() );
 			runtime[ i ].ofs_d_ = boost::shared_ptr< ofstream >( new ofstream() );
-			runtime[ i ].ofs_d_->open( filename_d, ios::binary );
-			runtime[ i ].ofs_c_->open( drive + filename_c, ios::binary );
+			if( i >= 2 )runtime[ i ].ofs_d_->open(  drive2 + filename_d, ios::binary );
+			else runtime[ i ].ofs_d_->open( filename_d, ios::binary );
+			runtime[ i ].ofs_c_->open(  drive2 + filename_c, ios::binary );
 			
 			runtime[ i ].id_ = i;
 
