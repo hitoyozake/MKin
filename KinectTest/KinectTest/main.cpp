@@ -425,6 +425,7 @@ namespace recording
 										pixel_ptr[ 1 ] = 140;
 										pixel_ptr[ 2 ]  = 140; 
 									}
+									
 								}
 							}
 #pragma endregion
@@ -548,7 +549,7 @@ namespace recording
 			runtime[ i ].ofs_c_->open(  drive2 + filename_c, ios::binary );
 			
 			runtime[ i ].id_ = i;
-
+			
 			kinect_thread_obj[ i ] = thread( kinect_thread, \
 				ref( runtime[ i ] ), ref( go_sign[ i ] ),ref( end_sign[ i ] ), \
 				ref( ready_sign[ i ] ) );

@@ -4,6 +4,7 @@
 #include <boost/make_shared.hpp>
 #include <string>
 #include <opencv2/opencv.hpp>
+#include <fstream>
 
 struct pcl_manager
 {
@@ -75,6 +76,9 @@ private:
 int main()
 {
 	pcl_manager pcl;
+
+	std::string c;
+	c.
 
 	return 0;
 }

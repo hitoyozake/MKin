@@ -25,6 +25,9 @@
 #define NO_MINMAX
 
 #pragma comment( lib, "glut32.lib" )
+#pragma comment( lib, "C:/Program Files/Microsoft SDKs/Kinect/v1.6/lib/x86/Kinect10.lib" )
+
+
 
 int const KINECT_NUM = 1;
 
@@ -405,6 +408,9 @@ void draw()
 	}
 	ifs_color[ 0 ].open( "color_0.txt", ios::binary  );
 
+	if( ifs_color[ 0 ].fail() )
+		return;
+
 	try {
 
 		std::vector< graph > graph( ifs_depth.size() );
@@ -419,6 +425,7 @@ void draw()
 		int x1 = 0, x2 = 10, y1 = 0, y2 = 10;
 
 		bool pause = false;
+		bool quick = false;
 		pcl_manager pcl_mn;
 		bool first_time = true;
 
@@ -445,32 +452,33 @@ void draw()
 
 			if( ! pause )
 			{
-
 				for( size_t i = 0; i < graph.size(); ++i )
 				{
 					ifs_depth[ i ].read( graph[ i ].depth_.image_->imageData, 640 * 480 * 2 ); 
 
-					if( count % 2 == 0 )
+					//if( count % 2 == 0 )
 						ifs_color[ i ].read( graph[ i ].color_.image_->imageData, 640 * 480 * 4 ); 
 
 					if( ifs_depth[ i ].eof() )
 							continue_flag = false;
 
-					if( first_time )
+					if( ! quick )
 					{
-						first_time = false;
+						if( first_time )
+						{
+							first_time = false;
 
-						pcl_mn.init( pcl_mn.convert_RGB_and_depth_to_cloud( \
-							graph[ i ].color_.image_,
-							graph[ i ].depth_.image_ ), "hoge" );
+							pcl_mn.init( pcl_mn.convert_RGB_and_depth_to_cloud( \
+								graph[ i ].color_.image_,
+								graph[ i ].depth_.image_ ), "hoge" );
+						}
+						else
+						{
+							pcl_mn.update( pcl_mn.convert_RGB_and_depth_to_cloud( \
+								graph[ i ].color_.image_,
+								graph[ i ].depth_.image_ ), "hoge" );
+						}
 					}
-					else
-					{
-						pcl_mn.update( pcl_mn.convert_RGB_and_depth_to_cloud( \
-							graph[ i ].color_.image_,
-							graph[ i ].depth_.image_ ), "hoge" );
-					}
-					
 
 					cout << "frame : " << ++count << endl;
 					
@@ -499,8 +507,10 @@ void draw()
 			{
 				pause = ! pause;
 			}
-
-
+			else if( key == 'n' )
+			{
+				quick = ! quick;
+			}
 		}
 	
 		::cvDestroyAllWindows();
@@ -513,6 +523,45 @@ void draw()
 
 int main()
 {
+	INuiSensor * kinect;
+	NuiCreateSensorByIndex( 0, & kinect );
+	kinect->NuiInitialize( NUI_INITIALIZE_FLAG_USES_COLOR | NUI_INITIALIZE_FLAG_USES_DEPTH
+				| NUI_INITIALIZE_FLAG_USES_AUDIO );
+	HANDLE depth;
+	HANDLE color;
+	HANDLE event_c = ::cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_8U, 4 );
+	HANDLE event_d = ::cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_16U, 1 );
+
+	NUI_IMAGE_FRAME image_frame_depth_;
+	NUI_IMAGE_FRAME image_frame_color_;
+
+	NUI_IMAGE_FRAME * image_frame_depth = & image_frame_depth_;
+	NUI_IMAGE_FRAME * image_frame_color = & image_frame_color_;
+
+	NuiImageStreamOpen( NUI_IMAGE_TYPE_DEPTH, NUI_IMAGE_RESOLUTION_640x480,
+				0, 2, event_d, & depth );
+	NuiImageStreamOpen( NUI_IMAGE_TYPE_COLOR, NUI_IMAGE_RESOLUTION_640x480,
+				0, 2, event_c, & color );
+	
+	NuiImageStreamSetImageFrameFlags( \
+		color, \
+		NUI_IMAGE_STREAM_FLAG_SUPPRESS_NO_FRAME_DATA //これで 無効フレーム抑制
+		| NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE //Nearモード
+		);
+	NuiImageStreamSetImageFrameFlags( \
+		depth, \
+		NUI_IMAGE_STREAM_FLAG_SUPPRESS_NO_FRAME_DATA //これで 無効フレーム抑制
+		| NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE //Nearモード
+		);
+
+	::WaitForSingleObject( event_c, INFINITE );
+	::WaitForSingleObject( event_d, INFINITE );
+
+	kinect->NuiImageStreamGetNextFrame( event_c, 0,  image_frame_depth );
+	kinect->NuiImageStreamGetNextFrame( event_d, 0,  image_frame_color );
+
+	cout << "foofoo" << endl;
 	draw();
+	kinect->NuiShutdown();
 	return 0;
 }

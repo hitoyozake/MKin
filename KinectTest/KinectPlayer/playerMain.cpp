@@ -22,6 +22,7 @@
 
 #include "../KinectTest/video.h"
 #include "../KinectTest/video.cpp"
+#include "background_sub.h"
 
 
 #define NO_MINMAX
@@ -157,12 +158,15 @@ void wait_input( bool & input_come, std::string & input )
 	}
 }
 
-cv::Ptr< IplImage > convert_color_from_depth( cv::Ptr< IplImage > depth )
+cv::Ptr< IplImage > convert_color_from_depth( IplImage * depth )
 {
 	auto const width = depth->width;
 	auto const height = depth->height;
-	cv::Ptr< IplImage > color = cvCreateImage( cvSize( width, height ), \
+	cout << "W:" << width << endl;
+	IplImage * color = cvCreateImage( cvSize( width, height ), \
 		IPL_DEPTH_8U, 4 );
+
+	cout << "hoge" << endl;
 
 	for( int x = 0; x < width; ++x )
 	{
@@ -171,6 +175,80 @@ cv::Ptr< IplImage > convert_color_from_depth( cv::Ptr< IplImage > depth )
 			auto * pixel_ptr = & color->imageData[ x * 4 + width * y * 4 ];
 			auto const pixel = ( ( ( UINT16 * )( depth->imageData +\
 				depth->widthStep * y ) )[ x ] ) >> 3;
+			
+			const int tmp = 0;
+
+			pixel_ptr[ 0 ] = 50;
+			pixel_ptr[ 1 ] = 50;
+			pixel_ptr[ 2 ] = 50;
+
+
+			if( pixel < 650 && pixel >= 10)
+			{
+				pixel_ptr[ 0 ] = 0;
+				pixel_ptr[ 1 ]  = ( char )( ( pixel - 400 ) * ( 255.0 / 250.0 ) ); 
+				pixel_ptr[ 2 ] = 255;
+			}
+			if( pixel < 1250 && pixel >= 650 )
+			{
+				pixel_ptr[ 0 ] = 0;
+				pixel_ptr[ 1 ] = 255;
+				pixel_ptr[ 2 ]  =  ( char )( 255 - ( pixel - 650 )* ( 255.0 / 600.0 ) ); 
+			}
+			if( pixel < 1750 && pixel >= 1250 )
+			{
+				pixel_ptr[ 0 ] = ( char )( ( pixel - 1250 ) * ( 255.0 / 500.0 ) );
+				pixel_ptr[ 1 ] = 255;
+				pixel_ptr[ 2 ]  =  0; 
+			}
+			if( pixel < 2250 && pixel >= 1750 )
+			{
+				pixel_ptr[ 0 ] = 255;
+				pixel_ptr[ 1 ] = ( char )( 255 - ( pixel - 1750 )* ( 255.0 / 500.0 ) );
+				pixel_ptr[ 2 ]  = ( char )( ( pixel - 1750 ) * ( 255.0 / 500.0 ) ); 
+			}
+			if( pixel < 2750 && pixel >= 2250 )
+			{
+				pixel_ptr[ 0 ] = 255;
+				pixel_ptr[ 1 ] = 0;
+				pixel_ptr[ 2 ]  = ( char )( 255 - ( pixel - 2250 ) * ( 255.0 / 500.0 ) ); 
+			}
+			if( pixel < 3250 && pixel >= 2750 )
+			{
+				pixel_ptr[ 0 ] = static_cast< char >( 255 - ( pixel - 2750 ) * ( 255.0 / 500.0 ) );
+				pixel_ptr[ 1 ] = static_cast< char >( 255 - ( pixel - 2750 ) * ( 255.0 / 500.0 ) );
+				pixel_ptr[ 2 ]  = static_cast< char >( 255 - ( pixel - 2750 ) * ( 255.0 / 500.0 ) ); 
+			}
+
+			if( pixel >= 3250 )
+			{
+				pixel_ptr[ 0 ] = 140;
+				pixel_ptr[ 1 ] = 140;
+				pixel_ptr[ 2 ] = 140; 
+			}
+		}
+	}
+	return color;
+}
+
+
+cv::Ptr< IplImage > convert_color_from_depth_prepared( cv::Ptr< IplImage > depth )
+{
+	auto const width = depth->width;
+	auto const height = depth->height;
+	cout << "W:" << width << endl;
+	cv::Ptr< IplImage > color = cvCreateImage( cvSize( width, height ), \
+		IPL_DEPTH_8U, 4 );
+
+	cout << "hoge" << endl;
+
+	for( int x = 0; x < width; ++x )
+	{
+		for( int y = 0; y < height; ++y )
+		{
+			auto * pixel_ptr = & color->imageData[ x * 4 + width * y * 4 ];
+			auto const pixel = ( ( UINT16 * )( depth->imageData +\
+				depth->widthStep * y ) )[ x ];
 
 			const int tmp = 0;
 
@@ -247,6 +325,102 @@ std::vector< std::string > get_filelist_from_current_dir()
 	}
 
 	return result;
+}
+
+
+void color_view_prepared( IplImage * image, IplImage * dst, int const x1, int const x2, int const y1, int const y2 )
+{
+	//範囲内を6(7)段階で表示
+
+	int max_depth = 1;
+	int min_depth = 4000;
+
+	for( int y = y1; y < y2; ++y )
+	{
+		for( int x = x1; x < x2; ++x )
+		{
+			auto const pixel = ( ( ( UINT16 * )( image->imageData +\
+				image->widthStep * y ) )[ x ] ) >> 3;
+
+			if( pixel >= 1 )
+			{
+				min_depth = std::min( pixel, min_depth );
+				max_depth = std::max( pixel, max_depth );
+			}
+		}
+	}
+
+	cout << "MIN: " << min_depth << endl;
+	cout << "MAX: " << max_depth << endl;
+
+
+	for( int y = y1; y < y2; ++y )
+	{
+		for( int x = x1; x < x2; ++x )
+		{
+			auto const pixel = ( ( ( UINT16 * )( image->imageData +\
+				image->widthStep * y ) )[ x ] );
+
+			auto * pixel_ptr = & dst->imageData[ x * 4 + dst->width * y * 4 ];
+			
+			auto const diff = ( max_depth - min_depth ) / 6;
+
+			if( pixel < ( min_depth +  diff ) && pixel >= min_depth )
+			{
+				pixel_ptr[ 0 ] = 0;
+				pixel_ptr[ 1 ]  = ( char )( ( pixel - min_depth ) * ( 255.0 / diff ) ); 
+				pixel_ptr[ 2 ] = 255;
+			}
+
+			if( pixel < ( min_depth +  diff * 2 ) && pixel >= min_depth + diff )
+			{
+				pixel_ptr[ 0 ] = 0;
+				pixel_ptr[ 1 ] = 255;
+				pixel_ptr[ 2 ]  =  ( char )( 255 - (  min_depth + diff )* ( 255.0 / diff ) ); 
+			}
+
+			if( pixel < ( min_depth +  diff * 3 ) && pixel >= min_depth + diff * 2 )
+			{
+				pixel_ptr[ 0 ] = ( char )( ( pixel - ( min_depth + diff * 2 ) ) * ( 255.0 / diff ) );
+				pixel_ptr[ 1 ] = 255;
+				pixel_ptr[ 2 ]  =  0; 
+			}
+
+			if( pixel < ( min_depth +  diff * 4 ) && pixel >= min_depth + diff * 3 )
+			{
+				pixel_ptr[ 0 ] = 255;
+				pixel_ptr[ 1 ] = ( char )( 255 - ( pixel - ( min_depth + diff * 3 ) )* ( 255.0 / diff ) );
+				pixel_ptr[ 2 ]  = ( char )( ( pixel - ( min_depth + diff * 3 ) ) * ( 255.0 / diff ) ); 
+			}
+
+			if( pixel < ( min_depth +  diff * 5 ) && pixel >= min_depth + diff * 4 )
+			{
+				pixel_ptr[ 0 ] = 255;
+				pixel_ptr[ 1 ] = 0;
+				pixel_ptr[ 2 ]  = ( char )( 255 - ( pixel - min_depth + diff * 4 ) * ( 255.0 / diff ) ); 
+			}
+
+			if( pixel < ( min_depth +  diff * 6 ) && pixel >= min_depth + diff * 5 )
+			{
+				pixel_ptr[ 0 ] = static_cast< char >( 255 - ( pixel - min_depth + diff * 5 ) * ( 255.0 / diff ) );
+				pixel_ptr[ 1 ] = static_cast< char >( 255 - ( pixel - min_depth + diff * 5 ) * ( 255.0 / diff ) );
+				pixel_ptr[ 2 ] = static_cast< char >( 255 - ( pixel - min_depth + diff * 5 ) * ( 255.0 / diff ) ); 
+			}
+			if( pixel ==  min_depth +  diff * 6 )
+			{
+				pixel_ptr[ 0 ] = pixel_ptr[ 1 ] = pixel_ptr[ 2 ] = 255;
+			}
+
+			if( pixel >=  min_depth +  diff * 6 )
+			{
+				pixel_ptr[ 0 ] = pixel_ptr[ 1 ] = pixel_ptr[ 2 ] = 130;
+			}
+
+		}
+	}
+
+
+
 }
 
 void color_view( IplImage * image, IplImage * dst, int const x1, int const x2, int const y1, int const y2 )
@@ -407,6 +581,8 @@ void draw()
 	}
 	ifs_color[ 0 ].open( "color_0.txt", ios::binary  );
 
+	if( ifs_color[ 0 ].fail() )
+		return;
 	try {
 
 		std::vector< graph > graph( ifs_depth.size() );
@@ -423,6 +599,9 @@ void draw()
 		bool pause = false;
 
 		IplImage * mod_color = cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_8U, 4  );
+		IplImage * first_depth = cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_16U, 1  );
+		IplImage * second_depth = cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_16U, 1  );
+		IplImage * result_depth = ::cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_16U, 1  );
 
 		while ( ( graph.size() > 0 ) && continue_flag )
 		{
@@ -471,6 +650,16 @@ void draw()
 
 					}
 
+					if( count == 5 )
+					{
+						cvCopy( graph[ i ].depth_.image_, first_depth );
+					}
+
+					if( count == 200 )
+					{
+						cvCopy( graph[ i ].depth_.image_, second_depth );
+					}
+
 					
 					//選択領域から最大のものと最小の画素を選んでその値で割る? 3000 - 3500 x / 3500
 					//video_m.write( true, c );
@@ -509,10 +698,17 @@ void draw()
 			{
 				pause = ! pause;
 			}
-
-
 		}
 	
+		//最後に画像表示
+		//background_sub( first_depth, second_depth, result_depth );
+		cvSub( second_depth, first_depth, result_depth );
+
+		IplImage * foo = convert_color_from_depth( result_depth );//result_depth );
+
+		cvShowImage( graph[ 0 ].depth_.window_name_.c_str(), foo );
+		cvWaitKey( -1 );
+		
 		::cvDestroyAllWindows();
 		
 	}
