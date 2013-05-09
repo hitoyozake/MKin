@@ -191,7 +191,6 @@ namespace recording
 		else
 			return boost::optional< NUI_LOCKED_RECT >( std::move( rect ) );
 	}
-
 	void wait_input( bool & input_come, std::string & input )
 	{
 		while( input != "end" )
