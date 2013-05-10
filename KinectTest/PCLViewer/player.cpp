@@ -42,6 +42,10 @@ struct mouse_info
 	}
 };
 
+
+
+
+
 void on_mouse( int event, int x, int y, int flags, void *param )
 {
 	auto mouse = static_cast< mouse_info * >( param );

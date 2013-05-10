@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 #include <NuiApi.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <boost/shared_ptr.hpp>
@@ -67,6 +68,87 @@ public:
 					auto * pixel_ptr = & color->imageData[ color_x * 4 + color->width * color_y * 4 ];
 					basic_point.x = x * 0.0004;
 					basic_point.y = y * 0.0004;
+					basic_point.z = ( ( ( ( UINT16 * )( depth->imageData +\
+						depth->widthStep * y ) )[ x ] ) >> 3  ) * 0.0005 - 0.0008;
+
+					basic_point.r = pixel_ptr[ 2 ];
+					basic_point.g = pixel_ptr[ 1 ];
+					basic_point.b = pixel_ptr[ 0 ];
+					//‰æ‘œ“à‚Ìê‡
+
+					cloud_ptr->points.push_back( basic_point );
+				}
+				else
+				{
+
+					if( result == E_POINTER )
+					{
+						std::cout << "NU" << endl;
+					}
+					else if( result == E_NUI_DEVICE_NOT_READY )
+					{
+						std::cout << "NUIDEVREADY_NOT" << endl;
+						
+					}
+					else if( result == E_INVALIDARG )
+					{
+						std::cout << "INV" << endl;
+					}
+					else
+					{
+						std::cout << "NAZO:";
+						std::cout << result << endl;
+					}
+				}
+			}
+		}
+
+		cloud_ptr->width = static_cast< int >( cloud_ptr->points.size() );
+		cloud_ptr->height = 30;
+
+		return cloud_ptr;
+	}
+
+	pcl::PointCloud< pcl::PointXYZRGB >::Ptr 
+		rotate_and_move_and_convert_RGB_and_depth_to_cloud( cv::Ptr< IplImage > const & color, \
+		cv::Ptr< IplImage > const & depth, int const move_x, int const move_y, double const theta )
+	{
+		const double pi = 3.141592653;
+		pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud_ptr
+			( new pcl::PointCloud< pcl::PointXYZRGB > );
+
+		for( int y = 0; y < color->height; ++y )
+		{
+			for( int x = 0; x < color->width; ++x )
+			{
+			
+				long color_x = x, color_y = y;
+				//( UINT16 )( ( ( ( UINT16 * )( depth->imageData +\
+						depth->widthStep * y ) )[ x ] ) >> 3  ), 
+				HRESULT result =	NuiImageGetColorPixelCoordinatesFromDepthPixelAtResolution( 
+				 NUI_IMAGE_RESOLUTION_640x480, NUI_IMAGE_RESOLUTION_640x480, NULL, x, y, 0, std::addressof( color_x ), std::addressof( color_y ) );
+					//if( 0 <= color_x && color_x <= 640 && 0 <= color_y && color_y <= 480 )
+					//{
+					//	pcl::PointXYZRGB basic_point;
+					//	auto * pixel_ptr = & color->imageData[ x * 4 + color->width * y * 4 ];
+					//	basic_point.x = x * 0.0004;
+					//	basic_point.y = y * 0.0004;
+					//	basic_point.z = ( ( ( ( UINT16 * )( depth->imageData +\
+					//		depth->widthStep * y ) )[ x ] ) >> 3  ) * 0.0005 - 0.0008;
+
+					//	basic_point.r = pixel_ptr[ 2 ];
+					//	basic_point.g = pixel_ptr[ 1 ];
+					//	basic_point.b = pixel_ptr[ 0 ];
+					//	//‰æ‘œ“à‚Ìê‡
+
+					//	cloud_ptr->points.push_back( basic_point );
+					//}
+				if( result == S_OK )
+				{
+					pcl::PointXYZRGB basic_point;
+					auto * pixel_ptr = & color->imageData[ color_x * 4 + color->width * color_y * 4 ];
+					basic_point.x = ( 1.0 * x * cos( theta ) - 1.0 * y * sin( theta ) )* 0.0004;
+					basic_point.y = ( 1.0 * x * sin( theta ) + 1.0 * y * cos( theta ) ) * 0.0004;
 					basic_point.z = ( ( ( ( UINT16 * )( depth->imageData +\
 						depth->widthStep * y ) )[ x ] ) >> 3  ) * 0.0005 - 0.0008;
 
