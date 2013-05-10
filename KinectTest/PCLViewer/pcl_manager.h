@@ -109,13 +109,13 @@ public:
 		return cloud_ptr;
 	}
 
-	pcl::PointCloud< pcl::PointXYZRGB >::Ptr 
+	void  
 		rotate_and_move_and_convert_RGB_and_depth_to_cloud( cv::Ptr< IplImage > const & color, \
-		cv::Ptr< IplImage > const & depth, int const move_x, int const move_y, double const theta )
+		cv::Ptr< IplImage > const & depth, int const move_x, int const move_y, double const theta, pcl::PointCloud< pcl::PointXYZRGB >::Ptr & cloud_ptr )
 	{
-		const double pi = 3.141592653;
+		const double pi = 3.141592653;/*
 		pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud_ptr
-			( new pcl::PointCloud< pcl::PointXYZRGB > );
+			( new pcl::PointCloud< pcl::PointXYZRGB > );*/
 
 		for( int y = 0; y < color->height; ++y )
 		{
@@ -186,14 +186,16 @@ public:
 
 		cloud_ptr->width = static_cast< int >( cloud_ptr->points.size() );
 		cloud_ptr->height = 30;
-
-		return cloud_ptr;
+		
 	}
 
 	void update( pcl::PointCloud< pcl::PointXYZRGB >::ConstPtr const & cloud, std::string const & viewer_id )
 	{
 		viewer_->updatePointCloud( cloud, viewer_id );
-		
+	}
+
+	void spin_once()
+	{	
 		viewer_->spinOnce();	//ï`âÊçXêV
 	}
 private:

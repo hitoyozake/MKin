@@ -475,12 +475,24 @@ void draw()
 							pcl_mn.init( pcl_mn.convert_RGB_and_depth_to_cloud( \
 								graph[ i ].color_.image_,
 								graph[ i ].depth_.image_ ), "hoge" );
+							pcl_mn.spin_once();
 						}
 						else
 						{
-							pcl_mn.update( pcl_mn.convert_RGB_and_depth_to_cloud( \
+							double const pi = 3.141592653;
+							pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud_ptr
+								( new pcl::PointCloud< pcl::PointXYZRGB > );
+
+							pcl_mn.rotate_and_move_and_convert_RGB_and_depth_to_cloud( \
 								graph[ i ].color_.image_,
-								graph[ i ].depth_.image_ ), "hoge" );
+								graph[ i ].depth_.image_, 0, 0, 0, cloud_ptr );
+							pcl_mn.rotate_and_move_and_convert_RGB_and_depth_to_cloud( \
+								graph[ i ].color_.image_,
+								graph[ i ].depth_.image_, 0, 0, pi/4, cloud_ptr );
+							pcl_mn.update( cloud_ptr, "hoge" );
+							pcl_mn.update( cloud_ptr, "hoge" );
+							pcl_mn.spin_once();
+
 						}
 					}
 
