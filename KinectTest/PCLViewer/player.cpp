@@ -385,8 +385,8 @@ void draw()
 	using namespace std;
 	int const kinect_count = 1;
 	bool const use_mouse = true;
-	vector< ifstream >  ifs_depth;//( kinect_count );
-	vector< ifstream >  ifs_color( 1 );//( kinect_count );
+	vector< ifstream >  ifs_depth( 2 );//( kinect_count );
+	vector< ifstream >  ifs_color( 2 );//( kinect_count );
 
 	//std::ifstream ifs_timestamp( "debug_log.txt");
 
@@ -399,18 +399,23 @@ void draw()
 
 	auto const filelist = get_recorded_filelist( get_filelist_from_current_dir() );
 
-	for( int i = 0; i < 1 + 0 * filelist.size(); ++i )
-	{
-		auto const filename_d = filelist[ i ];
-		//auto const filename_c = string( "color_" ) + boost::lexical_cast< string >\
-		( i ) + ".txt";
+	//for( int i = 0; i < 1 + 0 * filelist.size(); ++i )
+	//{
+	//	auto const filename_d = filelist[ i ];
+	//	//auto const filename_c = string( "color_" ) + boost::lexical_cast< string >\
+	//	( i ) + ".txt";
 
-		ifs_depth.push_back( ifstream() );
+	//	ifs_depth.push_back( ifstream() );
 
-		ifs_depth[ i ].open( filename_d, ios::binary );
-		//ifs_color[ i ].open( filename_c, ios::binary );
-	}
-	ifs_color[ 0 ].open( "color_0.txt", ios::binary  );
+	//	ifs_depth[ i ].open( filename_d, ios::binary );
+	//	//ifs_color[ i ].open( filename_c, ios::binary );
+	//}
+	ifs_color[ 0 ].open( "../KinectPlayer/color__20130402T093902_0.txt", ios::binary  );
+	ifs_color[ 1 ].open( "../KinectPlayer/color__20130402T093902_1.txt", ios::binary  );
+	ifs_depth[ 0 ].open( "../KinectPlayer/depth__20130402T093902_0.txt", ios::binary  );
+	ifs_depth[ 1 ].open( "../KinectPlayer/depth__20130402T093902_1.txt", ios::binary  );
+
+
 
 	if( ifs_color[ 0 ].fail() )
 		return;
@@ -448,11 +453,14 @@ void draw()
 				}
 			}
 
+
 			cvSetMouseCallback( "MultiKinectPlayer[1] Depth", on_mouse, & mouse );
-			cout << x1 << endl;
-			cout << x2 << endl;
-			cout << y1 << endl;
-			cout << y2 << endl;
+			//cout << x1 << endl;
+			//cout << x2 << endl;
+			//cout << y1 << endl;
+			//cout << y2 << endl;
+			pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud_ptr
+				( new pcl::PointCloud< pcl::PointXYZRGB > );
 
 			if( ! pause )
 			{
@@ -480,18 +488,15 @@ void draw()
 						else
 						{
 							double const pi = 3.141592653;
-							pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud_ptr
-								( new pcl::PointCloud< pcl::PointXYZRGB > );
 
-							pcl_mn.rotate_and_move_and_convert_RGB_and_depth_to_cloud( \
+
+							/*pcl_mn.rotate_and_move_and_convert_RGB_and_depth_to_cloud( \
 								graph[ i ].color_.image_,
 								graph[ i ].depth_.image_, 0, 0, 0, cloud_ptr );
-							pcl_mn.rotate_and_move_and_convert_RGB_and_depth_to_cloud( \
+						*/	pcl_mn.rotate_and_move_and_convert_RGB_and_depth_to_cloud( \
 								graph[ i ].color_.image_,
-								graph[ i ].depth_.image_, 0, 0, pi/4, cloud_ptr );
-							pcl_mn.update( cloud_ptr, "hoge" );
-							pcl_mn.update( cloud_ptr, "hoge" );
-							pcl_mn.spin_once();
+								graph[ i ].depth_.image_, 0, 0, ( 0 * i ) / 2, cloud_ptr );
+							//pcl_mn.update( cloud_ptr, "hoge" );
 
 						}
 					}
@@ -514,6 +519,9 @@ void draw()
 					//}
 
 				}
+				pcl_mn.update( cloud_ptr, "hoge" );
+				pcl_mn.spin_once();
+				cloud_ptr->clear();
 			}
 			int key = ::cvWaitKey( 20 );
 			if ( key == 'q' ) {

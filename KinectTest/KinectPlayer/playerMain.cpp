@@ -547,7 +547,15 @@ std::vector< std::string > get_recorded_filelist( std::vector< std::string > con
 	return result;
 }
 
+void save_image( IplImage * image, std::string const & filename )
+{
+	using namespace std;
 
+	std::ofstream ofs( filename, std::fstream::binary );
+
+	ofs.write( image->imageData, image->widthStep * image->height );
+
+}
 
 void draw()
 {
@@ -705,8 +713,15 @@ void draw()
 		cvSub( second_depth, first_depth, result_depth );
 
 		IplImage * foo = convert_color_from_depth( result_depth );//result_depth );
+		
+		cvErode( result_depth, result_depth, NULL, 5 );  //ûk‰ñ”3
+		cvDilate( result_depth, result_depth, NULL, 5 );  //ûk‰ñ”3
+		
 
-		cvShowImage( graph[ 0 ].depth_.window_name_.c_str(), foo );
+		cvShowImage( graph[ 0 ].depth_.window_name_.c_str(), result_depth );
+		save_image( result_depth, "sub_box.txt" );
+
+		//cvShowImage( graph[ 0 ].depth_.window_name_.c_str(), foo );
 		cvWaitKey( -1 );
 		
 		::cvDestroyAllWindows();
