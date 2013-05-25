@@ -111,7 +111,7 @@ public:
 
 	void  
 		rotate_and_move_and_convert_RGB_and_depth_to_cloud( cv::Ptr< IplImage > const & color, \
-		cv::Ptr< IplImage > const & depth, int const move_x, int const move_y, double const theta, pcl::PointCloud< pcl::PointXYZRGB >::Ptr & cloud_ptr )
+		cv::Ptr< IplImage > const & depth, int const move_x, int const move_y, int const move_z, double const theta, pcl::PointCloud< pcl::PointXYZRGB >::Ptr & cloud_ptr )
 	{
 		const double pi = 3.141592653;/*
 		pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud_ptr
@@ -147,10 +147,10 @@ public:
 				{
 					pcl::PointXYZRGB basic_point;
 					auto * pixel_ptr = & color->imageData[ color_x * 4 + color->width * color_y * 4 ];
-					basic_point.x = ( 1.0 * x * cos( theta ) - 1.0 * y * sin( theta ) )* 0.0004;
-					basic_point.y = ( 1.0 * x * sin( theta ) + 1.0 * y * cos( theta ) ) * 0.0004;
-					basic_point.z = ( ( ( ( UINT16 * )( depth->imageData +\
-						depth->widthStep * y ) )[ x ] ) >> 3  ) * 0.0005 - 0.0008;
+					basic_point.x = ( 1.0 * ( x + move_x ) * cos( theta ) - 1.0 * ( y + move_y ) * sin( theta ) )* 0.0004;
+					basic_point.y = ( 1.0 * ( x + move_x ) * sin( theta ) + 1.0 * ( y + move_y ) * cos( theta ) ) * 0.0004;
+					basic_point.z = ( ( ( ( ( UINT16 * )( depth->imageData +\
+						depth->widthStep * y ) )[ x ] ) >> 3  ) + move_z ) * 0.0005 - 0.0008;
 
 					basic_point.r = pixel_ptr[ 2 ];
 					basic_point.g = pixel_ptr[ 1 ];

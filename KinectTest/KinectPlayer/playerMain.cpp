@@ -714,8 +714,8 @@ void draw()
 
 		IplImage * foo = convert_color_from_depth( result_depth );//result_depth );
 		
-		cvErode( result_depth, result_depth, NULL, 5 );  //ûk‰ñ”3
-		cvDilate( result_depth, result_depth, NULL, 5 );  //ûk‰ñ”3
+		cvErode( result_depth, result_depth, NULL, 4 );  //ûk‰ñ”3
+		cvDilate( result_depth, result_depth, NULL, 1 );  //ûk‰ñ”3
 		
 
 		cvShowImage( graph[ 0 ].depth_.window_name_.c_str(), result_depth );

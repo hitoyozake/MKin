@@ -493,9 +493,10 @@ void draw()
 							/*pcl_mn.rotate_and_move_and_convert_RGB_and_depth_to_cloud( \
 								graph[ i ].color_.image_,
 								graph[ i ].depth_.image_, 0, 0, 0, cloud_ptr );
-						*/	pcl_mn.rotate_and_move_and_convert_RGB_and_depth_to_cloud( \
+						*/	
+							pcl_mn.rotate_and_move_and_convert_RGB_and_depth_to_cloud( \
 								graph[ i ].color_.image_,
-								graph[ i ].depth_.image_, 0, 0, ( 0 * i ) / 2, cloud_ptr );
+								graph[ i ].depth_.image_, 200 * i, 0,  i * -150, ( pi * i ) / 4, cloud_ptr );
 							//pcl_mn.update( cloud_ptr, "hoge" );
 
 						}
