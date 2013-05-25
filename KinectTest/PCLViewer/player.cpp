@@ -496,8 +496,12 @@ void draw()
 						*/	
 							pcl_mn.rotate_and_move_and_convert_RGB_and_depth_to_cloud( \
 								graph[ i ].color_.image_,
-								graph[ i ].depth_.image_, 200 * i, 0,  i * -150, ( pi * i ) / 4, cloud_ptr );
-							//pcl_mn.update( cloud_ptr, "hoge" );
+								graph[ i ].depth_.image_, -900 * i, 0,  i * -690, ( pi * 0 * i ) / 12, cloud_ptr );
+
+							if( i == 0 )
+							{
+								pcl_mn.rotate_cloud_y( cloud_ptr, -pi * 1.2 / 7 );
+							}
 
 						}
 					}
@@ -524,7 +528,7 @@ void draw()
 				pcl_mn.spin_once();
 				cloud_ptr->clear();
 			}
-			int key = ::cvWaitKey( 20 );
+			int key = ::cvWaitKey( 10 );
 			if ( key == 'q' ) {
 				continue_flag = false;
 			}

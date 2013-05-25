@@ -109,6 +109,25 @@ public:
 		return cloud_ptr;
 	}
 
+	void rotate_depth( cv::Ptr< IplImage > & depth, double const theta )
+	{
+
+	}
+
+	//yŽ²‰ñ“]
+	void rotate_cloud_y( pcl::PointCloud< pcl::PointXYZRGB >::Ptr & cloud_ptr, double const theta )
+	{
+		double const sin_theta = sin( theta );
+		double const cos_theta = cos( theta );
+
+		for( auto it = cloud_ptr->begin(); it != cloud_ptr->end(); ++it )
+		{
+				it->x = cos_theta * it->x + sin_theta * it->z;
+				it->z = - sin_theta * it->x + cos_theta * it->z;
+		}
+	}
+
+
 	void  
 		rotate_and_move_and_convert_RGB_and_depth_to_cloud( cv::Ptr< IplImage > const & color, \
 		cv::Ptr< IplImage > const & depth, int const move_x, int const move_y, int const move_z, double const theta, pcl::PointCloud< pcl::PointXYZRGB >::Ptr & cloud_ptr )
