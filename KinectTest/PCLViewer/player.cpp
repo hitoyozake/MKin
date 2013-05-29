@@ -479,7 +479,7 @@ void draw()
 						if( first_time )
 						{
 							first_time = false;
-
+							
 							pcl_mn.init( pcl_mn.convert_RGB_and_depth_to_cloud( \
 								graph[ i ].color_.image_,
 								graph[ i ].depth_.image_ ), "hoge" );

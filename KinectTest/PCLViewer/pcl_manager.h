@@ -1,16 +1,41 @@
 #include <iostream>
 #include <cmath>
 #include <NuiApi.h>
+#include <cmath>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <boost/shared_ptr.hpp>
+#include <boost/shared_array.hpp>
 #include <boost/make_shared.hpp>
 #include <string>
 #include <opencv2/opencv.hpp>
+
+int const KINECT_RANGES_TABLE_LEN = 2048; // or 1024 == 10bit
 
 struct pcl_manager
 {
 public:
 	boost::shared_ptr< pcl::visualization::PCLVisualizer > viewer_;
+	boost::shared_array< double > table_;
+
+	void calculate_kinect_depth_table()
+	{
+		double const k1 = 1.1863;
+		double const k2 = 2842.5;
+		double const k3 = 0.1236;
+
+		for( std::size_t i = 1; i < KINECT_RANGES_TABLE_LEN - 1; ++i )
+		{
+			//10bit�̏ꍇ
+			//table_[ i ] = k3 * tan( i / k2 + k1 );
+			table_[ i ] = 1.0 / ( i * ( - 0.0030711016 ) + 3.3309495161 );
+		}
+		table_[ 0 ] = table_[ KINECT_RANGES_TABLE_LEN ] = 0;
+	}
+
+
+	pcl_manager() : table_( new double[ KINECT_RANGES_TABLE_LEN ] )
+	{
+	}
 
 	void init( pcl::PointCloud< pcl::PointXYZRGB >::ConstPtr calib_cloud,
 		std::string const & viewer_id )
@@ -35,6 +60,7 @@ public:
 	{
 		pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud_ptr
 			( new pcl::PointCloud< pcl::PointXYZRGB > );
+		static double a = 1.0;
 
 		for( int y = 0; y < color->height; ++y )
 		{
@@ -67,10 +93,10 @@ public:
 					pcl::PointXYZRGB basic_point;
 					auto * pixel_ptr = & color->imageData[ color_x * 4 + color->width * color_y * 4 ];
 					basic_point.x = x * 0.0004;
-					basic_point.y = y * 0.0004;
+					basic_point.y = ( y * 0.0004 ) / ( 1 + y * 20 );
 					basic_point.z = ( ( ( ( UINT16 * )( depth->imageData +\
-						depth->widthStep * y ) )[ x ] ) >> 3  ) * 0.0005 - 0.0008;
-
+						depth->widthStep * y ) )[ x ] ) >> 3  ) * 0.0005;// / ( y * a + 1 );
+					a += 100.0;
 					basic_point.r = pixel_ptr[ 2 ];
 					basic_point.g = pixel_ptr[ 1 ];
 					basic_point.b = pixel_ptr[ 0 ];
@@ -135,7 +161,8 @@ public:
 		const double pi = 3.141592653;/*
 		pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud_ptr
 			( new pcl::PointCloud< pcl::PointXYZRGB > );*/
-
+		
+		double py = 0;
 		for( int y = 0; y < color->height; ++y )
 		{
 			for( int x = 0; x < color->width; ++x )
@@ -167,9 +194,11 @@ public:
 					pcl::PointXYZRGB basic_point;
 					auto * pixel_ptr = & color->imageData[ color_x * 4 + color->width * color_y * 4 ];
 					basic_point.x = ( 1.0 * ( x + move_x ) * cos( theta ) - 1.0 * ( y + move_y ) * sin( theta ) )* 0.0004;
-					basic_point.y = ( 1.0 * ( x + move_x ) * sin( theta ) + 1.0 * ( y + move_y ) * cos( theta ) ) * 0.0004;
+					basic_point.y = py + ( ( 1 * 0.0004 ) / ( 1.0 + y * 0.01 ) );//( ( 1.0 * ( x + move_x ) * sin( theta ) + 1.0 * ( y + move_y ) * cos( theta ) ) * 0.0004 );
 					basic_point.z = ( ( ( ( ( UINT16 * )( depth->imageData +\
-						depth->widthStep * y ) )[ x ] ) >> 3  ) + move_z ) * 0.0005 - 0.0008;
+						depth->widthStep * y ) )[ x ] ) >> 3  ) + move_z ) * 0.0005;
+
+					//basic_point.y = ( 1.0 + y * y * 0.000003 ); 
 
 					basic_point.r = pixel_ptr[ 2 ];
 					basic_point.g = pixel_ptr[ 1 ];
@@ -201,6 +230,7 @@ public:
 					}
 				}
 			}
+			py = py + ( ( 1 * 0.0004 ) / ( 1.0 + y * 0.01 ) );
 		}
 
 		cloud_ptr->width = static_cast< int >( cloud_ptr->points.size() );
