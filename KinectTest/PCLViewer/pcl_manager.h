@@ -35,6 +35,7 @@ public:
 
 	pcl_manager() : table_( new double[ KINECT_RANGES_TABLE_LEN ] )
 	{
+		calculate_kinect_depth_table();
 	}
 
 	void init( pcl::PointCloud< pcl::PointXYZRGB >::ConstPtr calib_cloud,
@@ -194,9 +195,10 @@ public:
 					pcl::PointXYZRGB basic_point;
 					auto * pixel_ptr = & color->imageData[ color_x * 4 + color->width * color_y * 4 ];
 					basic_point.x = ( 1.0 * ( x + move_x ) * cos( theta ) - 1.0 * ( y + move_y ) * sin( theta ) )* 0.0004;
-					basic_point.y = py + ( ( 1 * 0.0004 ) / ( 1.0 + y * 0.01 ) );//( ( 1.0 * ( x + move_x ) * sin( theta ) + 1.0 * ( y + move_y ) * cos( theta ) ) * 0.0004 );
-					basic_point.z = ( ( ( ( ( UINT16 * )( depth->imageData +\
-						depth->widthStep * y ) )[ x ] ) >> 3  ) + move_z ) * 0.0005;
+					basic_point.y = ( ( 1.0 * ( x + move_x ) * sin( theta ) + 1.0 * ( y + move_y ) * cos( theta ) ) * 0.0004 );
+					basic_point.z = ( table_[ ( ( ( ( UINT16 * )( depth->imageData +\
+						depth->widthStep * y ) )[ x ] ) >> 3  ) / 2 ] + move_z * 0.0005 );/*( ( ( ( ( UINT16 * )( depth->imageData +\
+						depth->widthStep * y ) )[ x ] ) >> 3  ) + move_z ) * 0.0005;*/
 
 					//basic_point.y = ( 1.0 + y * y * 0.000003 ); 
 
