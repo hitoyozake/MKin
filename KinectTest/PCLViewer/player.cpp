@@ -10,6 +10,7 @@
 #include <boost/algorithm/string.hpp>
 
 #include <boost/regex.hpp>
+#include <boost/thread.hpp>
 #include <boost/filesystem.hpp>
 
 #include <boost/lexical_cast.hpp>
@@ -22,6 +23,7 @@
 #include <glut.h>
 
 #include "pcl_manager.h"
+#include "global_parameter.h"
 #define NO_MINMAX
 
 #pragma comment( lib, "glut32.lib" )
@@ -43,44 +45,6 @@ struct mouse_info
 };
 
 
-
-
-
-void on_mouse( int event, int x, int y, int flags, void *param )
-{
-	auto mouse = static_cast< mouse_info * >( param );
-	switch(event){
-	case CV_EVENT_MOUSEMOVE:
-		break;
-	case CV_EVENT_LBUTTONDOWN:
-		cout << "hello" << endl;
-		mouse->flag_ = false;
-		mouse->x1_ = x;
-		mouse->y1_ = y;
-		// When Left button is pressed, ...
-		break;
-
-	case CV_EVENT_LBUTTONUP:
-		mouse->x2_ = x;
-		mouse->y2_ = y;
-		cout << "hellohellohello" << endl;
-
-		mouse->flag_ = true;
-		// When Left button is released, ...
-		break;
-
-	case CV_EVENT_RBUTTONDOWN:
-
-		break;
-
-	case CV_EVENT_RBUTTONUP:
-
-		break;
-
-	default:
-		break;
-	}
-}
 
 struct Runtime
 {
@@ -133,20 +97,14 @@ void init( std::vector< graph > & graph )
 		//深度==============================================================
 
 		// ウィンドウ名を作成
-		graph[ i ].depth_.window_name_ = "MultiKinectPlayer[" + boost::lexical_cast< string >\
-			( i + 1 ) + "] Depth";
-
-		graph[ i ].color_.window_name_ = "MultiKinectPlayer[" + boost::lexical_cast< string >\
-			( i + 1 ) + "] Color";
+	
 		graph[ i ].filename_ = string( "depth_" ) + boost::lexical_cast< string >\
 			( i ) + ".txt";
 
 
 		// OpenCVの初期設定
 		graph[ i ].color_.image_ = ::cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_8U, 4 );
-		::cvNamedWindow( graph[ i ].color_.window_name_.c_str(), CV_WINDOW_KEEPRATIO );
 		graph[ i ].depth_.image_ = ::cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_16U, 1  );
-		::cvNamedWindow( graph[ i ].depth_.window_name_.c_str(), CV_WINDOW_KEEPRATIO );
 	}
 }
 
@@ -352,9 +310,6 @@ void color_view( IplImage * image, IplImage * dst, int const x1, int const x2, i
 }
 
 
-
-
-
 std::vector< std::string > get_recorded_filelist( std::vector< std::string > const & filelist )
 {
 	std::vector< std::string > result;
@@ -382,6 +337,8 @@ std::vector< std::string > get_recorded_filelist( std::vector< std::string > con
 
 void draw()
 {
+	double const pi = 3.141592653;
+
 	using namespace std;
 	int const kinect_count = 1;
 	bool const use_mouse = true;
@@ -410,12 +367,19 @@ void draw()
 	//	ifs_depth[ i ].open( filename_d, ios::binary );
 	//	//ifs_color[ i ].open( filename_c, ios::binary );
 	//}
-	ifs_color[ 0 ].open( "../KinectPlayer/color__20130402T093902_0.txt", ios::binary  );
-	ifs_color[ 1 ].open( "../KinectPlayer/color__20130402T093902_1.txt", ios::binary  );
-	ifs_depth[ 0 ].open( "../KinectPlayer/depth__20130402T093902_0.txt", ios::binary  );
-	ifs_depth[ 1 ].open( "../KinectPlayer/depth__20130402T093902_1.txt", ios::binary  );
+	ifs_color[ 0 ].open( "../data/color__20130531T2054360.txt", ios::binary  );
+	ifs_color[ 1 ].open( "../data/color__20130531T2054361.txt", ios::binary  );
+	ifs_depth[ 0 ].open( "../KinectTest/depth__20130531T2054360.txt", ios::binary  );
+	ifs_depth[ 1 ].open( "../KinectTest/depth__20130531T2054361.txt", ios::binary  );
 
+	if( ifs_color[ 0 ].fail() || ifs_color[ 1 ].fail() || \
+		ifs_depth[ 0 ].fail() || ifs_depth[ 1 ].fail() )
+		return;
 
+	bool input_come = false;
+	std::string input;
+
+	boost::thread thread( wait_input, std::ref( input_come ), std::ref( input ) );
 
 	if( ifs_color[ 0 ].fail() )
 		return;
@@ -431,37 +395,26 @@ void draw()
 
 		init( graph );
 
-		int x1 = 0, x2 = 10, y1 = 0, y2 = 10;
-
 		bool pause = false;
 		bool quick = false;
 		pcl_manager pcl_mn;
 		bool first_time = true;
 
+		std::array< gp::global_parameter, 4 > global_param;
+
 		IplImage * mod_color = cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_8U, 4  );
 
 		while ( ( graph.size() > 0 ) && continue_flag )
 		{
+			pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud_ptr[ 2 ];
+			pcl::PointCloud< pcl::PointXYZRGB >::Ptr final_cloud( new pcl::PointCloud< pcl::PointXYZRGB > );
+
+			for( int i = 0; i < 2; ++i )
 			{
-				if( mouse.flag_ )
-				{
-					mouse.flag_ = 0;
-					x1 = max( 0, min( mouse.x1_ , mouse.x2_ ) );
-					x2 = min( 630, max( mouse.x1_ , mouse.x2_ ) );
-					y1 = max( 0, min( mouse.y1_ , mouse.y2_ ) );
-					y2 = min( 470, max( mouse.y1_ , mouse.y2_ ) );
-				}
+				cloud_ptr[ i ] = pcl::PointCloud< pcl::PointXYZRGB >::Ptr( new pcl::PointCloud< pcl::PointXYZRGB > );
 			}
 
-
-			cvSetMouseCallback( "MultiKinectPlayer[1] Depth", on_mouse, & mouse );
-			//cout << x1 << endl;
-			//cout << x2 << endl;
-			//cout << y1 << endl;
-			//cout << y2 << endl;
-			pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud_ptr
-				( new pcl::PointCloud< pcl::PointXYZRGB > );
-
+			
 			if( ! pause )
 			{
 				for( size_t i = 0; i < graph.size(); ++i )
@@ -487,8 +440,6 @@ void draw()
 						}
 						else
 						{
-							double const pi = 3.141592653;
-
 
 							/*pcl_mn.rotate_and_move_and_convert_RGB_and_depth_to_cloud( \
 								graph[ i ].color_.image_,
@@ -496,13 +447,7 @@ void draw()
 						*/	
 							pcl_mn.rotate_and_move_and_convert_RGB_and_depth_to_cloud( \
 								graph[ i ].color_.image_,
-								graph[ i ].depth_.image_, -900 * i, 0,  i * -690, ( pi * 0 * i ) / 12, cloud_ptr );
-
-							if( i == 0 )
-							{
-								pcl_mn.rotate_cloud_y( cloud_ptr, -pi * 1.2 / 7 );
-							}
-
+								graph[ i ].depth_.image_, global_param[ i ], cloud_ptr[ i ] );
 						}
 					}
 
@@ -524,25 +469,75 @@ void draw()
 					//}
 
 				}
-				pcl_mn.update( cloud_ptr, "hoge" );
+
+				//保留
+				//pcl_mn.iterative_closest_point( cloud_ptr[ 0 ], cloud_ptr[ 1 ], final_cloud );
+				* final_cloud = * cloud_ptr[ 0 ] + * cloud_ptr[ 1 ];
+				pcl_mn.update( final_cloud, "hoge" );
 				pcl_mn.spin_once();
-				cloud_ptr->clear();
+				for( int i = 0; i < 2; ++i )
+					cloud_ptr[ i ]->clear();
+				final_cloud->clear();
 			}
-			int key = ::cvWaitKey( 10 );
-			if ( key == 'q' ) {
-				continue_flag = false;
-			}
-			else if( key == 'p' )
+
+			if( input_come )
 			{
-				pause = ! pause;
-			}
-			else if( key == 'n' )
-			{
-				quick = ! quick;
+				if ( input == "end" ) {
+					continue_flag = false;
+				}
+				else if( input == "p" )
+				{
+					pause = ! pause;
+				}
+				else if( input == "n" )
+				{
+					quick = ! quick;
+				}
+				else if( input == "cmd" )
+				{
+					//操作
+					//画像番号0-3
+					//move・・・並行移動、rotate・・・回転
+					//xyz
+					//座標数 or 角度(radian の pi 無し)
+
+					int num = 0;
+					cin >> num;
+					num = std::max( 0, std::min( 3, num ) );
+					
+					std::string operate;
+					cin >> operate;
+
+					std::string axis;
+					cin >> axis;
+
+					double deg = 0.0;
+
+					cin >> deg;
+
+					if( operate == "move" )
+					{
+						if( axis == "x" )
+							global_param[ num ].x_ += deg;
+						if( axis == "y" )
+							global_param[ num ].y_ += deg;
+						if( axis == "z" )
+							global_param[ num ].z_ += deg;	
+					}
+					if( operate == "rotate" )
+					{
+						if( axis == "x" )
+							global_param[ num ].x_ += deg * pi;
+						if( axis == "y" )
+							global_param[ num ].y_ += deg * pi;
+						if( axis == "z" )
+							global_param[ num ].z_ += deg * pi;	
+					}
+				}
+				input_come = false;
+
 			}
 		}
-	
-		::cvDestroyAllWindows();
 		
 	}
 	catch ( std::exception & ex ) {

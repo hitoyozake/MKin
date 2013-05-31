@@ -76,9 +76,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="global_parameter.h" />
     <ClInclude Include="pcl_manager.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="global_param.cpp" />
     <ClCompile Include="player.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
