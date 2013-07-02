@@ -1,11 +1,14 @@
 #include <iostream>
 #include <cmath>
+#include <Windows.h>
+//==========
 #include <NuiApi.h>
 #include <cmath>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/shared_array.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/progress.hpp>
 #include <string>
 #include <opencv2/opencv.hpp>
 #include <pcl/registration/icp.h>
@@ -18,40 +21,64 @@ struct pcl_manager
 {
 public:
 	boost::shared_ptr< pcl::visualization::PCLVisualizer > viewer_;
+	bool locked_;
+	bool end_mes_;
+	bool inited_;
+
+	void loop()
+	{
+
+	}
+
+	
+	pcl_manager()
+	{
+		locked_ = false;
+		end_mes_ = false;
+		inited_ = false;
+	}
 
 	void init( pcl::PointCloud< pcl::PointXYZRGB >::ConstPtr calib_cloud,
 		std::string const & viewer_id )
 	{
 		viewer_ = boost::make_shared\
 			< pcl::visualization::PCLVisualizer >();
-		viewer_->setBackgroundColor( 40, 40, 40 );
 
 		viewer_->addPointCloud( calib_cloud, viewer_id );
 
 		viewer_->setPointCloudRenderingProperties( \
-			pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, \
+			pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, \
 			viewer_id );
 		viewer_->addCoordinateSystem( 1.0 );
-		viewer_->initCameraParameters(); 
+		viewer_->initCameraParameters();
+		viewer_->setBackgroundColor( 0.1, 0.1, 0.1 );
+
+		spin_once();
+		locked_ = false;
+		end_mes_ = false;
+		inited_ = true;
 	}
 
-	void iterative_closest_point( pcl::PointCloud< pcl::PointXYZRGB >::Ptr in1, 
+	Eigen::Matrix4f iterative_closest_point( pcl::PointCloud< pcl::PointXYZRGB >::Ptr const in1, 
 		pcl::PointCloud< pcl::PointXYZRGB >::Ptr in2, pcl::PointCloud< pcl::PointXYZRGB >::Ptr result )
 	{
+
+		std::cout << "ICP" << std::endl;
+		boost::progress_timer timer;
 		pcl::IterativeClosestPoint< pcl::PointXYZRGB, pcl::PointXYZRGB > icp;
 		
 		icp.setInputCloud( in1 );
 		icp.setInputTarget( in2 );
 		
-
-		icp.setTransformationEpsilon( 10 );
-		icp.setMaxCorrespondenceDistance( 4000.0 );
-		icp.setMaximumIterations( 500 );
-		icp.setEuclideanFitnessEpsilon( 10.0 );
-		icp.setRANSACOutlierRejectionThreshold( 10.0 );
-
+		icp.setMaximumIterations( 15 );
+		icp.setMaxCorrespondenceDistance( 0.01 );
 		icp.align( * result );
-		
+
+		std::cout << "ICP END" << std::endl;
+
+		std::cout << icp.getFinalTransformation() << std::endl;
+
+		return icp.getFinalTransformation();
 	}
 
 
@@ -73,22 +100,7 @@ public:
 						depth->widthStep * y ) )[ x ] ) >> 3  ), 
 				HRESULT result =	NuiImageGetColorPixelCoordinatesFromDepthPixelAtResolution( 
 				 NUI_IMAGE_RESOLUTION_640x480, NUI_IMAGE_RESOLUTION_640x480, NULL, x, y, 0, std::addressof( color_x ), std::addressof( color_y ) );
-					//if( 0 <= color_x && color_x <= 640 && 0 <= color_y && color_y <= 480 )
-					//{
-					//	pcl::PointXYZRGB basic_point;
-					//	auto * pixel_ptr = & color->imageData[ x * 4 + color->width * y * 4 ];
-					//	basic_point.x = x * 0.0004;
-					//	basic_point.y = y * 0.0004;
-					//	basic_point.z = ( ( ( ( UINT16 * )( depth->imageData +\
-					//		depth->widthStep * y ) )[ x ] ) >> 3  ) * 0.0005 - 0.0008;
 
-					//	basic_point.r = pixel_ptr[ 2 ];
-					//	basic_point.g = pixel_ptr[ 1 ];
-					//	basic_point.b = pixel_ptr[ 0 ];
-					//	//âÊëúì‡ÇÃèÍçá
-
-					//	cloud_ptr->points.push_back( basic_point );
-					//}
 				if( result == S_OK )
 				{
 					pcl::PointXYZRGB basic_point;
@@ -136,10 +148,149 @@ public:
 		return cloud_ptr;
 	}
 
-	void rotate_depth( cv::Ptr< IplImage > & depth, double const theta )
+	//îwåiç∑ï™ã@î\ïtÇ´
+	void rotate_and_move_and_convert_RGB_and_depth_to_cloud_with_sub( cv::Ptr< IplImage > const & color, \
+		cv::Ptr< IplImage > const & depth, gp::global_parameter const & g_param, pcl::PointCloud< pcl::PointXYZRGB >::Ptr & cloud_ptr, \
+		bool const light, IplImage * const & depth_back, bool const only_depth = false )
 	{
+		const double pi = 3.141592653;/*
+		pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud_ptr
+			( new pcl::PointCloud< pcl::PointXYZRGB > );*/
+		
+		double py = 0;
 
+		//îwåiç∑ï™É}ÉXÉNÇçÏê¨
+
+		IplImage * mask = cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_16U, 1 );
+
+		for( int y = 0; y < color->height; ++y )
+		{
+				for( int x = 0; x < color->width; ++x )
+				{
+					auto const d = ( UINT16 )( ( ( ( UINT16 * )( depth->imageData +\
+						depth->widthStep * y ) )[ x ] ) );
+
+					auto const back_d = ( UINT16 )( ( ( ( UINT16 * )( depth_back->imageData +\
+						depth_back->widthStep * y ) )[ x ] ) );
+
+					auto const threshold = 100;
+					if( abs( d - back_d ) < threshold )
+					{
+						( UINT16 )( ( ( ( UINT16 * )( mask->imageData +\
+						depth->widthStep * y ) )[ x ] ) ) = 0;
+						//îwåiÇ∆àÍèè
+						continue;
+					}
+					else
+					{
+						( UINT16 )( ( ( ( UINT16 * )( mask->imageData +\
+						depth->widthStep * y ) )[ x ] ) ) = d;
+					}
+				}
+		}
+
+		//é˚èkÇ∆ñcí£
+		cvErode( mask, mask, NULL, 2 );  //é˚èkâÒêî2
+		cvDilate( mask, mask, NULL, 4 );  //ñcí£âÒêî3
+
+		for( int y = 0; y < color->height; ++y )
+		{
+			if( ! light || light && y % 2 == 0 )
+			{
+				for( int x = 0; x < color->width; ++x )
+				{
+					if( ! light || light && x % 2 == 0 )
+					{
+						long color_x = x, color_y = y;
+						//íçà” : KinectÇê⁄ë±ÇµÇƒÇ¢Ç»ÇØÇÍÇŒìÆÇ©Ç»Ç¢
+
+						auto const d = ( UINT16 )( ( ( ( UINT16 * )( depth->imageData +\
+							depth->widthStep * y ) )[ x ] ) >> 3 );
+						
+						auto const back_d = ( UINT16 )( ( ( ( UINT16 * )( depth_back->imageData +\
+							depth_back->widthStep * y ) )[ x ] ) >> 3  );
+
+						auto const mask_d = ( UINT16 )( ( ( ( UINT16 * )( mask->imageData +\
+							mask->widthStep * y ) )[ x ] ) >> 3  );
+
+						auto const threshold = 100;
+						if( abs( d - back_d ) < threshold || mask_d == 0 )
+						{
+							//îwåiÇ∆àÍèè
+							continue;
+						}
+
+
+						HRESULT result = NuiImageGetColorPixelCoordinatesFromDepthPixelAtResolution( 
+							NUI_IMAGE_RESOLUTION_640x480, NUI_IMAGE_RESOLUTION_640x480, NULL, x, y, ( ( ( ( UINT16 * )( depth->imageData +\
+								depth->widthStep * y ) )[ x ] )  ), std::addressof( color_x ), std::addressof( color_y ) );
+						if( result == S_OK && color_x >= 0 && color_x < 640 && \
+							color_y >= 0 && color_y < 480 )
+						{
+							//âÊñ ì‡ÇÃèÍçá
+
+							auto const real_point = NuiTransformDepthImageToSkeleton( x, y, ( ( ( ( UINT16 * )( depth->imageData +\
+								depth->widthStep * y ) )[ x ] )  ), NUI_IMAGE_RESOLUTION_640x480 );
+							pcl::PointXYZRGB basic_point;
+
+							auto * pixel_ptr = & color->imageData[ color_x * 4 + color->width * color_y * 4 ];
+							basic_point.x = real_point.x;
+							basic_point.y = real_point.y;
+							basic_point.z = real_point.z - 1.35;
+
+							//basic_point.y = ( 1.0 + y * y * 0.000003 ); 
+
+							basic_point.r = 120;only_depth ? 120 : pixel_ptr[ 2 ];
+							basic_point.g = 120;only_depth ? 120 : pixel_ptr[ 1 ];
+							basic_point.b = 140;only_depth ? 140 : pixel_ptr[ 0 ];
+							//110.125
+
+							cloud_ptr->points.push_back( basic_point );
+						}
+						else
+						{
+
+							if( result == E_POINTER )
+							{
+								std::cout << "NU" << endl;
+							}
+							else if( result == E_NUI_DEVICE_NOT_READY )
+							{
+								std::cout << "NUIDEVREADY_NOT" << endl;
+
+							}
+							else if( result == E_INVALIDARG )
+							{
+								std::cout << "INV" << endl;
+							}
+							else
+							{
+								//std::cout << "NAZO:";
+								//std::cout << result << endl;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		cvRelease( ( void ** )& mask );
+
+		cloud_ptr->width = static_cast< int >( cloud_ptr->points.size() );
+		cloud_ptr->height = 1;
+		rotate_cloud_x_axis( cloud_ptr, g_param.x_theta_ );
+		rotate_cloud_y_axis( cloud_ptr, g_param.y_theta_ );
+		rotate_cloud_z_axis( cloud_ptr, g_param.z_theta_ );
+
+		for( auto it = cloud_ptr->begin(); it != cloud_ptr->end(); ++it )
+		{
+			it->x += g_param.x_;
+			it->y += g_param.y_;
+			it->z += g_param.z_;
+		}
+		std::cout << "foo" << std::endl;
 	}
+
 
 	//yé≤âÒì]
 	void rotate_cloud_y_axis( pcl::PointCloud< pcl::PointXYZRGB >::Ptr & cloud_ptr, double const theta )
@@ -149,8 +300,9 @@ public:
 
 		for( auto it = cloud_ptr->begin(); it != cloud_ptr->end(); ++it )
 		{
-				it->x = cos_theta * it->x + sin_theta * it->z;
-				it->z = - sin_theta * it->x + cos_theta * it->z;
+			auto const x = it->x; auto const z = it->z;
+				it->x = cos_theta * x + sin_theta * z;
+				it->z = - sin_theta * x + cos_theta * z;
 		}
 	}
 
@@ -159,12 +311,15 @@ public:
 	{
 		double const sin_theta = sin( theta );
 		double const cos_theta = cos( theta );
+		
+		//R( Éø, 0,0 )
+		Eigen::Matrix4f rotate;
+		rotate << 1, 0, 0, 0, \
+				0, cos_theta, - sin_theta, 0,
+				0, sin_theta, cos_theta, 0,
+				0, 0, 0, 1;
 
-		for( auto it = cloud_ptr->begin(); it != cloud_ptr->end(); ++it )
-		{
-				it->y = cos_theta * it->y - sin_theta * it->z;
-				it->z = - sin_theta * it->y + cos_theta * it->z;
-		}
+		pcl::transformPointCloud( * cloud_ptr, * cloud_ptr, rotate );
 	}
 
 	//zé≤âÒì]
@@ -173,11 +328,16 @@ public:
 		double const sin_theta = sin( theta );
 		double const cos_theta = cos( theta );
 
-		for( auto it = cloud_ptr->begin(); it != cloud_ptr->end(); ++it )
-		{
-				it->x = cos_theta * it->x - sin_theta * it->y;
-				it->y = - sin_theta * it->x + cos_theta * it->y;
-		}
+				//R( Éø, 0,0 )
+		Eigen::Matrix4f rotate;
+		rotate << \
+				cos_theta, - sin_theta, 0, 0, \
+				sin_theta, cos_theta,   0, 0,
+				0,0,1,0,
+				0, 0, 0, 1;
+
+		pcl::transformPointCloud( * cloud_ptr, * cloud_ptr, rotate );
+
 	}
 
 	void fusion_cloud( pcl::PointCloud< pcl::PointXYZRGB >::Ptr & cloud_ptr, pcl::PointCloud< pcl::PointXYZRGB >::Ptr & result )
@@ -186,7 +346,8 @@ public:
 	}
 
 	void rotate_and_move_and_convert_RGB_and_depth_to_cloud( cv::Ptr< IplImage > const & color, \
-		cv::Ptr< IplImage > const & depth, gp::global_parameter const & g_param, pcl::PointCloud< pcl::PointXYZRGB >::Ptr & cloud_ptr )
+		cv::Ptr< IplImage > const & depth, gp::global_parameter const & g_param, pcl::PointCloud< pcl::PointXYZRGB >::Ptr & cloud_ptr, \
+		bool const light )
 	{
 		const double pi = 3.141592653;/*
 		pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud_ptr
@@ -195,67 +356,79 @@ public:
 		double py = 0;
 		for( int y = 0; y < color->height; ++y )
 		{
-			for( int x = 0; x < color->width; ++x )
+			if( ! light || light && y % 4 == 0 )
 			{
-				long color_x = x, color_y = y;
-				//íçà” : KinectÇê⁄ë±ÇµÇƒÇ¢Ç»ÇØÇÍÇŒìÆÇ©Ç»Ç¢
-				HRESULT result = NuiImageGetColorPixelCoordinatesFromDepthPixelAtResolution( 
-				NUI_IMAGE_RESOLUTION_640x480, NUI_IMAGE_RESOLUTION_640x480, NULL, x, y, 0, std::addressof( color_x ), std::addressof( color_y ) );
-				if( result == S_OK )
+				for( int x = 0; x < color->width; ++x )
 				{
-					//âÊñ ì‡ÇÃèÍçá
-
-					auto const real_point = NuiTransformDepthImageToSkeleton( x, y, ( ( ( ( UINT16 * )( depth->imageData +\
-						depth->widthStep * y ) )[ x ] ) >> 3  ), NUI_IMAGE_RESOLUTION_640x480 );
-					pcl::PointXYZRGB basic_point;
-				
-					auto * pixel_ptr = & color->imageData[ color_x * 4 + color->width * color_y * 4 ];
-					basic_point.x = real_point.x + g_param.x_;
-					basic_point.y = real_point.y + g_param.y_;
-					basic_point.z = real_point.z + g_param.z_;
-
-					//basic_point.y = ( 1.0 + y * y * 0.000003 ); 
-
-					basic_point.r = pixel_ptr[ 2 ];
-					basic_point.g = pixel_ptr[ 1 ];
-					basic_point.b = pixel_ptr[ 0 ];
-					
-
-					cloud_ptr->points.push_back( basic_point );
-				}
-				else
-				{
-
-					if( result == E_POINTER )
+					if( ! light || light && x % 4 == 0 )
 					{
-						std::cout << "NU" << endl;
-					}
-					else if( result == E_NUI_DEVICE_NOT_READY )
-					{
-						std::cout << "NUIDEVREADY_NOT" << endl;
-						
-					}
-					else if( result == E_INVALIDARG )
-					{
-						std::cout << "INV" << endl;
-					}
-					else
-					{
-						std::cout << "NAZO:";
-						std::cout << result << endl;
+						long color_x = x, color_y = y;
+						//íçà” : KinectÇê⁄ë±ÇµÇƒÇ¢Ç»ÇØÇÍÇŒìÆÇ©Ç»Ç¢
+						HRESULT result = NuiImageGetColorPixelCoordinatesFromDepthPixelAtResolution( 
+							NUI_IMAGE_RESOLUTION_640x480, NUI_IMAGE_RESOLUTION_640x480, NULL, x, y, ( ( ( ( UINT16 * )( depth->imageData +\
+								depth->widthStep * y ) )[ x ] )  ), std::addressof( color_x ), std::addressof( color_y ) );
+						if( result == S_OK && color_x >= 0 && color_x < 640 && \
+							color_y >= 0 && color_y < 480 )
+						{
+							//âÊñ ì‡ÇÃèÍçá
+
+							auto const real_point = NuiTransformDepthImageToSkeleton( x, y, ( ( ( ( UINT16 * )( depth->imageData +\
+								depth->widthStep * y ) )[ x ] )  ), NUI_IMAGE_RESOLUTION_640x480 );
+							pcl::PointXYZRGB basic_point;
+
+							auto * pixel_ptr = & color->imageData[ color_x * 4 + color->width * color_y * 4 ];
+							basic_point.x = real_point.x;
+							basic_point.y = real_point.y;
+							basic_point.z = real_point.z - 1.35;
+
+							//basic_point.y = ( 1.0 + y * y * 0.000003 ); 
+
+							basic_point.r = pixel_ptr[ 2 ];
+							basic_point.g = pixel_ptr[ 1 ];
+							basic_point.b = pixel_ptr[ 0 ];
+							//110.125
+
+							cloud_ptr->points.push_back( basic_point );
+						}
+						else
+						{
+
+							if( result == E_POINTER )
+							{
+								std::cout << "NU" << endl;
+							}
+							else if( result == E_NUI_DEVICE_NOT_READY )
+							{
+								std::cout << "NUIDEVREADY_NOT" << endl;
+
+							}
+							else if( result == E_INVALIDARG )
+							{
+								std::cout << "INV" << endl;
+							}
+							else
+							{
+								//std::cout << "NAZO:";
+								//std::cout << result << endl;
+							}
+						}
 					}
 				}
 			}
 		}
 
 		cloud_ptr->width = static_cast< int >( cloud_ptr->points.size() );
+		cloud_ptr->height = 1;
+		rotate_cloud_x_axis( cloud_ptr, g_param.x_theta_ );
+		rotate_cloud_y_axis( cloud_ptr, g_param.y_theta_ );
+		rotate_cloud_z_axis( cloud_ptr, g_param.z_theta_ );
 
-		rotate_cloud_x_axis( cloud_ptr, g_param.x_theta_ * pi );
-		rotate_cloud_y_axis( cloud_ptr, g_param.y_theta_ * pi );
-		rotate_cloud_z_axis( cloud_ptr, g_param.z_theta_ * pi );
-
-		cloud_ptr->height = 30;
-		
+		for( auto it = cloud_ptr->begin(); it != cloud_ptr->end(); ++it )
+		{
+			it->x += g_param.x_;
+			it->y += g_param.y_;
+			it->z += g_param.z_;
+		}
 	}
 
 	void update( pcl::PointCloud< pcl::PointXYZRGB >::ConstPtr const & cloud, std::string const & viewer_id )

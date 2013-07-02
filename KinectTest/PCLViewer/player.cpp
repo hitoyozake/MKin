@@ -31,7 +31,7 @@
 
 
 
-int const KINECT_NUM = 1;
+int const KINECT_NUM = 4;
 
 struct mouse_info
 {
@@ -48,7 +48,7 @@ struct mouse_info
 
 struct Runtime
 {
-	INuiSensor *        kinect;         // Kinectのインスタンス
+	INuiSensor * kinect;         // Kinectのインスタンス
 
 	struct image_data
 	{
@@ -79,13 +79,20 @@ struct graph
 };
 
 
-void set_mortor( long const angle, INuiSensor & kinect )
+void viewer_thread( pcl_manager & manager )
 {
-	long const max_angle = 30;
-	long const min_angle = -30;		
-	auto const value = std::max( min_angle, std::min( max_angle, angle ) );
-	kinect.NuiCameraElevationSetAngle( value );
-	Sleep( 100 );
+	std::cout << "viewer_thread launced" << std::endl;
+	while( ! manager.end_mes_ )
+	{
+		Sleep( 15 );
+		if( manager.inited_ )
+		{
+			std::cout << "hogehoge" << std::endl;
+		//manager.viewer_->spinOnce( 100 );
+		}
+
+	}
+	std::cout << "loop end" << std::endl;
 }
 
 void init( std::vector< graph > & graph )
@@ -100,7 +107,6 @@ void init( std::vector< graph > & graph )
 	
 		graph[ i ].filename_ = string( "depth_" ) + boost::lexical_cast< string >\
 			( i ) + ".txt";
-
 
 		// OpenCVの初期設定
 		graph[ i ].color_.image_ = ::cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_8U, 4 );
@@ -122,75 +128,6 @@ void wait_input( bool & input_come, std::string & input )
 	}
 }
 
-cv::Ptr< IplImage > convert_color_from_depth( cv::Ptr< IplImage > depth )
-{
-	auto const width = depth->width;
-	auto const height = depth->height;
-	cv::Ptr< IplImage > color = cvCreateImage( cvSize( width, height ), \
-		IPL_DEPTH_8U, 4 );
-
-	for( int x = 0; x < width; ++x )
-	{
-		for( int y = 0; y < height; ++y )
-		{
-			auto * pixel_ptr = & color->imageData[ x * 4 + width * y * 4 ];
-			auto const pixel = ( ( ( UINT16 * )( depth->imageData +\
-				depth->widthStep * y ) )[ x ] ) >> 3;
-
-			const int tmp = 0;
-
-			pixel_ptr[ 0 ] = 50;
-			pixel_ptr[ 1 ] = 50;
-			pixel_ptr[ 2 ] = 50;
-
-
-			if( pixel < 650 && pixel >= 10)
-			{
-				pixel_ptr[ 0 ] = 0;
-				pixel_ptr[ 1 ]  = ( char )( ( pixel - 400 ) * ( 255.0 / 250.0 ) ); 
-				pixel_ptr[ 2 ] = 255;
-			}
-			if( pixel < 1250 && pixel >= 650 )
-			{
-				pixel_ptr[ 0 ] = 0;
-				pixel_ptr[ 1 ] = 255;
-				pixel_ptr[ 2 ]  =  ( char )( 255 - ( pixel - 650 )* ( 255.0 / 600.0 ) ); 
-			}
-			if( pixel < 1750 && pixel >= 1250 )
-			{
-				pixel_ptr[ 0 ] = ( char )( ( pixel - 1250 ) * ( 255.0 / 500.0 ) );
-				pixel_ptr[ 1 ] = 255;
-				pixel_ptr[ 2 ]  =  0; 
-			}
-			if( pixel < 2250 && pixel >= 1750 )
-			{
-				pixel_ptr[ 0 ] = 255;
-				pixel_ptr[ 1 ] = ( char )( 255 - ( pixel - 1750 )* ( 255.0 / 500.0 ) );
-				pixel_ptr[ 2 ]  = ( char )( ( pixel - 1750 ) * ( 255.0 / 500.0 ) ); 
-			}
-			if( pixel < 2750 && pixel >= 2250 )
-			{
-				pixel_ptr[ 0 ] = 255;
-				pixel_ptr[ 1 ] = 0;
-				pixel_ptr[ 2 ]  = ( char )( 255 - ( pixel - 2250 ) * ( 255.0 / 500.0 ) ); 
-			}
-			if( pixel < 3250 && pixel >= 2750 )
-			{
-				pixel_ptr[ 0 ] = static_cast< char >( 255 - ( pixel - 2750 ) * ( 255.0 / 500.0 ) );
-				pixel_ptr[ 1 ] = static_cast< char >( 255 - ( pixel - 2750 ) * ( 255.0 / 500.0 ) );
-				pixel_ptr[ 2 ]  = static_cast< char >( 255 - ( pixel - 2750 ) * ( 255.0 / 500.0 ) ); 
-			}
-
-			if( pixel >= 3250 )
-			{
-				pixel_ptr[ 0 ] = 140;
-				pixel_ptr[ 1 ] = 140;
-				pixel_ptr[ 2 ] = 140; 
-			}
-		}
-	}
-	return color;
-}
 
 std::vector< std::string > get_filelist_from_current_dir()
 {
@@ -212,101 +149,6 @@ std::vector< std::string > get_filelist_from_current_dir()
 	}
 
 	return result;
-}
-
-void color_view( IplImage * image, IplImage * dst, int const x1, int const x2, int const y1, int const y2 )
-{
-	//範囲内を6(7)段階で表示
-
-	int max_depth = 1;
-	int min_depth = 4000;
-
-	for( int y = y1; y < y2; ++y )
-	{
-		for( int x = x1; x < x2; ++x )
-		{
-			auto const pixel = ( ( ( UINT16 * )( image->imageData +\
-				image->widthStep * y ) )[ x ] ) >> 3;
-
-			if( pixel >= 1 )
-			{
-				min_depth = std::min( pixel, min_depth );
-				max_depth = std::max( pixel, max_depth );
-			}
-		}
-	}
-
-	cout << "MIN: " << min_depth << endl;
-	cout << "MAX: " << max_depth << endl;
-
-
-	for( int y = y1; y < y2; ++y )
-	{
-		for( int x = x1; x < x2; ++x )
-		{
-			auto const pixel = ( ( ( UINT16 * )( image->imageData +\
-				image->widthStep * y ) )[ x ] ) >> 3;
-
-			auto * pixel_ptr = & dst->imageData[ x * 4 + dst->width * y * 4 ];
-			
-			auto const diff = ( max_depth - min_depth ) / 6;
-
-			if( pixel < ( min_depth +  diff ) && pixel >= min_depth )
-			{
-				pixel_ptr[ 0 ] = 0;
-				pixel_ptr[ 1 ]  = ( char )( ( pixel - min_depth ) * ( 255.0 / diff ) ); 
-				pixel_ptr[ 2 ] = 255;
-			}
-
-			if( pixel < ( min_depth +  diff * 2 ) && pixel >= min_depth + diff )
-			{
-				pixel_ptr[ 0 ] = 0;
-				pixel_ptr[ 1 ] = 255;
-				pixel_ptr[ 2 ]  =  ( char )( 255 - (  min_depth + diff )* ( 255.0 / diff ) ); 
-			}
-
-			if( pixel < ( min_depth +  diff * 3 ) && pixel >= min_depth + diff * 2 )
-			{
-				pixel_ptr[ 0 ] = ( char )( ( pixel - ( min_depth + diff * 2 ) ) * ( 255.0 / diff ) );
-				pixel_ptr[ 1 ] = 255;
-				pixel_ptr[ 2 ]  =  0; 
-			}
-
-			if( pixel < ( min_depth +  diff * 4 ) && pixel >= min_depth + diff * 3 )
-			{
-				pixel_ptr[ 0 ] = 255;
-				pixel_ptr[ 1 ] = ( char )( 255 - ( pixel - ( min_depth + diff * 3 ) )* ( 255.0 / diff ) );
-				pixel_ptr[ 2 ]  = ( char )( ( pixel - ( min_depth + diff * 3 ) ) * ( 255.0 / diff ) ); 
-			}
-
-			if( pixel < ( min_depth +  diff * 5 ) && pixel >= min_depth + diff * 4 )
-			{
-				pixel_ptr[ 0 ] = 255;
-				pixel_ptr[ 1 ] = 0;
-				pixel_ptr[ 2 ]  = ( char )( 255 - ( pixel - min_depth + diff * 4 ) * ( 255.0 / diff ) ); 
-			}
-
-			if( pixel < ( min_depth +  diff * 6 ) && pixel >= min_depth + diff * 5 )
-			{
-				pixel_ptr[ 0 ] = static_cast< char >( 255 - ( pixel - min_depth + diff * 5 ) * ( 255.0 / diff ) );
-				pixel_ptr[ 1 ] = static_cast< char >( 255 - ( pixel - min_depth + diff * 5 ) * ( 255.0 / diff ) );
-				pixel_ptr[ 2 ] = static_cast< char >( 255 - ( pixel - min_depth + diff * 5 ) * ( 255.0 / diff ) ); 
-			}
-			if( pixel ==  min_depth +  diff * 6 )
-			{
-				pixel_ptr[ 0 ] = pixel_ptr[ 1 ] = pixel_ptr[ 2 ] = 255;
-			}
-
-			if( pixel >=  min_depth +  diff * 6 )
-			{
-				pixel_ptr[ 0 ] = pixel_ptr[ 1 ] = pixel_ptr[ 2 ] = 130;
-			}
-
-		}
-	}
-
-
-
 }
 
 
@@ -333,6 +175,35 @@ std::vector< std::string > get_recorded_filelist( std::vector< std::string > con
 	return result;
 }
 
+void create_back_image( ifstream & back_depth, IplImage * result )
+{
+	int const FRAME_NUM = 300;
+	auto tmp_image = ::cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_16U, 1  );
+	
+	back_depth.read( result->imageData ,640 * 480 * 2 );
+
+
+	for( int i = 0; i < FRAME_NUM; ++i )
+	{
+		back_depth.read( tmp_image->imageData ,640 * 480 * 2 );
+
+		for( int y = 0; y < result->height; ++y )
+		{
+			for( int x = 0; x < result->width; ++x )
+			{
+				( ( UINT16 * )( result->imageData +\
+				result->widthStep * y ) )[ x ] =
+				std::max( ( ( UINT16 * )( result->imageData +\
+				result->widthStep * y ) )[ x ], ( ( UINT16 * )( tmp_image->imageData +\
+				tmp_image->widthStep * y ) )[ x ] );
+				
+				
+			}
+		}
+	}
+
+	
+}
 
 
 void draw()
@@ -342,9 +213,10 @@ void draw()
 	using namespace std;
 	int const kinect_count = 1;
 	bool const use_mouse = true;
-	vector< ifstream >  ifs_depth( 2 );//( kinect_count );
-	vector< ifstream >  ifs_color( 2 );//( kinect_count );
-
+	vector< ifstream >  ifs_depth( 4 );//( kinect_count );
+	vector< ifstream >  ifs_color( 4 );//( kinect_count );
+	vector< ifstream >  ifs_depth_back( 4 );//( kinect_count );
+	vector< ifstream >  ifs_color_back( 4 );//( kinect_count );
 	//std::ifstream ifs_timestamp( "debug_log.txt");
 
 	mouse_info mouse;
@@ -366,11 +238,37 @@ void draw()
 
 	//	ifs_depth[ i ].open( filename_d, ios::binary );
 	//	//ifs_color[ i ].open( filename_c, ios::binary );
-	//}
-	ifs_color[ 0 ].open( "../data/color__20130531T2054360.txt", ios::binary  );
-	ifs_color[ 1 ].open( "../data/color__20130531T2054361.txt", ios::binary  );
-	ifs_depth[ 0 ].open( "../KinectTest/depth__20130531T2054360.txt", ios::binary  );
-	ifs_depth[ 1 ].open( "../KinectTest/depth__20130531T2054361.txt", ios::binary  );
+	//
+	std::cout << "program started" << std::endl;
+	//baby __20130523T104214
+	//back            122852
+
+
+	ifs_depth_back[ 0 ].open( "D:/rec2/depth__20130523T122852_0.txt", ios::binary  );
+	ifs_depth_back[ 1 ].open( "D:/rec2/depth__20130523T122852_1.txt", ios::binary  );
+	ifs_depth_back[ 2 ].open( "D:/rec2/depth__20130523T122852_2.txt", ios::binary  );
+	ifs_depth_back[ 3 ].open( "D:/rec2/depth__20130523T122852_3.txt", ios::binary  );
+	
+	ifs_color[ 0 ].open( "C:/rec/color__20130523T104214_0.txt", ios::binary  );
+	ifs_color[ 1 ].open( "C:/rec/color__20130523T104214_1.txt", ios::binary  );
+	ifs_color[ 2 ].open( "C:/rec/color__20130523T104214_2.txt", ios::binary  );
+	ifs_color[ 3 ].open( "C:/rec/color__20130523T104214_3.txt", ios::binary  );
+	ifs_depth[ 0 ].open( "D:/rec2/depth__20130523T104214_0.txt", ios::binary  );
+	ifs_depth[ 1 ].open( "D:/rec2/depth__20130523T104214_1.txt", ios::binary  );
+	ifs_depth[ 2 ].open( "D:/rec2/depth__20130523T104214_2.txt", ios::binary  );
+	ifs_depth[ 3 ].open( "D:/rec2/depth__20130523T104214_3.txt", ios::binary  );
+	
+	IplImage * depth_back[ 4 ];
+
+	//差分用画像領域を確保
+	//差分作成用画像を生成
+	for( int i = 0; i < 4; ++i )
+	{
+		depth_back[ i ] = cvCreateImage( cvSize( 640, 480 ),  IPL_DEPTH_16U, 1 );
+
+		create_back_image( ifs_depth_back[ i ], depth_back[ i ] );
+
+	}
 
 	if( ifs_color[ 0 ].fail() || ifs_color[ 1 ].fail() || \
 		ifs_depth[ 0 ].fail() || ifs_depth[ 1 ].fail() )
@@ -380,9 +278,6 @@ void draw()
 	std::string input;
 
 	boost::thread thread( wait_input, std::ref( input_come ), std::ref( input ) );
-
-	if( ifs_color[ 0 ].fail() )
-		return;
 
 	try {
 
@@ -397,8 +292,13 @@ void draw()
 
 		bool pause = false;
 		bool quick = false;
+
 		pcl_manager pcl_mn;
+
 		bool first_time = true;
+		bool next = true;
+		bool icp = false;
+		bool simple = true;
 
 		std::array< gp::global_parameter, 4 > global_param;
 
@@ -406,16 +306,16 @@ void draw()
 
 		while ( ( graph.size() > 0 ) && continue_flag )
 		{
-			pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud_ptr[ 2 ];
+			pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud_ptr[ 4 ];
 			pcl::PointCloud< pcl::PointXYZRGB >::Ptr final_cloud( new pcl::PointCloud< pcl::PointXYZRGB > );
 
-			for( int i = 0; i < 2; ++i )
+			for( int i = 0; i < 4; ++i )
 			{
 				cloud_ptr[ i ] = pcl::PointCloud< pcl::PointXYZRGB >::Ptr( new pcl::PointCloud< pcl::PointXYZRGB > );
 			}
 
 			
-			if( ! pause )
+			if( ! pause && next )
 			{
 				for( size_t i = 0; i < graph.size(); ++i )
 				{
@@ -427,16 +327,17 @@ void draw()
 					if( ifs_depth[ i ].eof() )
 							continue_flag = false;
 
-					if( ! quick )
+					if( 1)//! quick )
 					{
 						if( first_time )
 						{
 							first_time = false;
-							
 							pcl_mn.init( pcl_mn.convert_RGB_and_depth_to_cloud( \
 								graph[ i ].color_.image_,
 								graph[ i ].depth_.image_ ), "hoge" );
-							pcl_mn.spin_once();
+							pcl_mn.rotate_and_move_and_convert_RGB_and_depth_to_cloud_with_sub( \
+								graph[ i ].color_.image_,
+								graph[ i ].depth_.image_, global_param[ i ], cloud_ptr[ i ], simple, depth_back[ i ] );
 						}
 						else
 						{
@@ -445,45 +346,81 @@ void draw()
 								graph[ i ].color_.image_,
 								graph[ i ].depth_.image_, 0, 0, 0, cloud_ptr );
 						*/	
-							pcl_mn.rotate_and_move_and_convert_RGB_and_depth_to_cloud( \
+							pcl_mn.rotate_and_move_and_convert_RGB_and_depth_to_cloud_with_sub( \
 								graph[ i ].color_.image_,
-								graph[ i ].depth_.image_, global_param[ i ], cloud_ptr[ i ] );
+								graph[ i ].depth_.image_, global_param[ i ], cloud_ptr[ i ], simple, depth_back[ i ], count % 2 );
+							//icpしない場合は簡易描画
 						}
 					}
-
-					cout << "frame : " << ++count << endl;
-					
-					//if( ! ( ifs_timestamp.fail() || ifs_timestamp.eof() ) )
-					//{
-					//	double time;
-					//	ifs_timestamp >> time ;
-
-					//	if( time > 0.0 && time < 10.0 )
-					//	{
-					//		//Sleep( time * 1000 );
-					//	}
-					//	else
-					//	{
-					//	}
-
-					//}
-
 				}
-
+				
+				cout << "frame : " << ++count << endl;
 				//保留
 				//pcl_mn.iterative_closest_point( cloud_ptr[ 0 ], cloud_ptr[ 1 ], final_cloud );
-				* final_cloud = * cloud_ptr[ 0 ] + * cloud_ptr[ 1 ];
+				pcl_mn.locked_ = true;
+				
+				if( icp && count >= 1 )
+				{
+					final_cloud->clear();
+					auto const transform = pcl_mn.iterative_closest_point( cloud_ptr[ 0 ],
+						cloud_ptr[ 1 ], final_cloud );
+
+					pcl::transformPointCloud( * cloud_ptr[ 1 ], * cloud_ptr[ 1 ],
+						transform );
+
+					pcl::PointCloud< pcl::PointXYZRGB >::Ptr tmp_cloud( new pcl::PointCloud< pcl::PointXYZRGB > );
+
+					* tmp_cloud = * cloud_ptr[ 0 ] + * cloud_ptr[ 1 ];
+					final_cloud->clear();
+					auto const transform2 = pcl_mn.iterative_closest_point( tmp_cloud, cloud_ptr[ 2 ], final_cloud );
+
+					pcl::transformPointCloud( * cloud_ptr[ 2 ], * cloud_ptr[ 2 ],
+						transform2 );
+					
+					tmp_cloud->clear();
+					* tmp_cloud = * cloud_ptr[ 0 ] + * cloud_ptr[ 1 ];
+					* tmp_cloud += * cloud_ptr[ 2 ];
+
+					auto const transform3 = pcl_mn.iterative_closest_point( tmp_cloud, cloud_ptr[ 3 ], final_cloud );
+
+					pcl::transformPointCloud( * cloud_ptr[ 3 ], * cloud_ptr[ 3 ],
+						transform3 );
+					
+					final_cloud->clear();
+					for( int i = 0; i < 4; ++i )
+					{
+						* final_cloud += * cloud_ptr[ i ];
+					}
+				}
+				else
+				{
+					* final_cloud = * cloud_ptr[ 0 ] + * cloud_ptr[ 1 ];
+					* final_cloud += * cloud_ptr[ 2 ];
+					* final_cloud += * cloud_ptr[ 3 ];
+				}
+
 				pcl_mn.update( final_cloud, "hoge" );
 				pcl_mn.spin_once();
 				for( int i = 0; i < 2; ++i )
 					cloud_ptr[ i ]->clear();
 				final_cloud->clear();
+				pcl_mn.locked_ = false;
+				cout << "nf" << endl;
 			}
+
+			
+			pcl_mn.spin_once();
+			if( ! quick )
+				next = false;
+			icp = false;
+			simple = true;
 
 			if( input_come )
 			{
 				if ( input == "end" ) {
 					continue_flag = false;
+					pcl_mn.end_mes_ = true;
+					thread.join();
 				}
 				else if( input == "p" )
 				{
@@ -491,30 +428,44 @@ void draw()
 				}
 				else if( input == "n" )
 				{
+					next = true;
+					//simple = false;
 					quick = ! quick;
 				}
 				else if( input == "cmd" )
 				{
+					next = true;
 					//操作
 					//画像番号0-3
 					//move・・・並行移動、rotate・・・回転
 					//xyz
 					//座標数 or 角度(radian の pi 無し)
-
+					
 					int num = 0;
-					cin >> num;
+					if( !( cin >> num ) )
+					{
+						input_come = false;
+						continue;
+					}
+					
 					num = std::max( 0, std::min( 3, num ) );
 					
 					std::string operate;
-					cin >> operate;
-
+					if( !( cin >> operate ) )
+					{
+						input_come = false;
+						continue;
+					}
 					std::string axis;
 					cin >> axis;
 
 					double deg = 0.0;
 
-					cin >> deg;
-
+					if( !( cin >> deg ) )
+					{
+						input_come = false;
+						continue;
+					}
 					if( operate == "move" )
 					{
 						if( axis == "x" )
@@ -527,11 +478,16 @@ void draw()
 					if( operate == "rotate" )
 					{
 						if( axis == "x" )
-							global_param[ num ].x_ += deg * pi;
+							global_param[ num ].x_theta_ += deg * pi;
 						if( axis == "y" )
-							global_param[ num ].y_ += deg * pi;
+							global_param[ num ].y_theta_ += deg * pi;
 						if( axis == "z" )
-							global_param[ num ].z_ += deg * pi;	
+							global_param[ num ].z_theta_ += deg * pi;	
+					}
+					if( operate == "icp" )
+					{
+						simple = false;
+						icp = true;
 					}
 				}
 				input_come = false;
