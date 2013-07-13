@@ -29,8 +29,6 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-
-
 #include "video.h"
 #include "filesystem.h"
 
@@ -66,6 +64,49 @@ namespace recording
 		int id_;
 	};
 
+	struct mouse_info
+	{
+		int x1_, x2_, y1_, y2_;
+		int flag_;
+
+		mouse_info() : x1_( 0 ), x2_( 10 ), y1_( 0 ), y2_( 10 )
+		{
+		}
+	};
+
+	void on_mouse( int event, int x, int y, int flags, void * param )
+	{
+		auto mouse = static_cast< mouse_info * >( param );
+		switch( event )
+		{
+		case CV_EVENT_MOUSEMOVE:
+			break;
+		case CV_EVENT_LBUTTONDOWN:
+			cout << "mouse Left button holding......." << endl;
+			mouse->flag_ = false;
+			mouse->x1_ = x;
+			mouse->y1_ = y;
+			// When Left button is pressed, ...
+			break;
+
+		case CV_EVENT_LBUTTONUP:
+			mouse->x2_ = x;
+			mouse->y2_ = y;
+			cout << "mouse Left button released......" << endl;
+			mouse->flag_ = true;
+			// When Left button is released, ...
+			break;
+
+		case CV_EVENT_RBUTTONDOWN:
+			break;
+
+		case CV_EVENT_RBUTTONUP:
+			break;
+
+		default:
+			break;
+		}
+	}
 	void set_mortor( long const angle, INuiSensor & kinect )
 	{
 		long const max_angle = 27;
@@ -74,6 +115,9 @@ namespace recording
 		kinect.NuiCameraElevationSetAngle( value );
 		Sleep( 100 );
 	}
+
+	
+	
 
 	//現在の日時を取得
 	//std::string generate_current_time()
@@ -103,8 +147,6 @@ namespace recording
 		//std::cout << boost::posix_time::to_iso_string( now ) << std::endl;
 		return now_str;
 	}
-
-
 
 	void init( std::vector< Runtime > & runtime, std::string const & current_time, bool const color_view = false )
 	{
@@ -146,6 +188,7 @@ namespace recording
 			//深度==============================================================
 			::NuiImageResolutionToSize( NUI_IMAGE_RESOLUTION_640x480, x, y );	
 
+			//解像度を指定してStreamを開く
 			runtime[i].kinect_->NuiImageStreamOpen( NUI_IMAGE_TYPE_DEPTH, NUI_IMAGE_RESOLUTION_640x480,
 				0, 2, runtime[ i ].depth_.image_, & runtime[ i ].depth_.stream_handle_ );
 			// ウィンドウ名を作成
@@ -182,9 +225,10 @@ namespace recording
 		// 画像データの取得
 	{
 		NUI_LOCKED_RECT rect;
-		auto hRes = image_frame.pFrameTexture->LockRect( 0, & rect, 0, 0 );
+		auto hRes = image_frame.pFrameTexture->LockRect( 0, std::addressof( rect ), 0, 0 );
 
-		if(hRes != S_OK){
+		if( hRes != S_OK )
+		{
 			printf(" ERR: %sフレームバッファロック失敗. res=%d.", kind.c_str(), hRes );
 			return boost::none;
 		}
@@ -240,7 +284,9 @@ namespace recording
 	}
 
 
-	void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & ready_sign )
+
+	//mouse_infoは別スレッドで書き換えられるので注意
+	void kinect_thread( Runtime & runtime, int & go_sign, int & end_sign, int & ready_sign, mouse_info const & mi )
 	{
 		using namespace std;
 		//go_signをオフにするのはこっち. readyをオフにするのはメイン
@@ -318,8 +364,10 @@ namespace recording
 					//video_queue_writing = false;
 					runtime.ofs_c_->write( runtime.color_.image_->imageData, runtime.color_.image_->widthStep * runtime.color_.image_->height );
 					//resized.release();
+					cvSetImageROI( depth_image, cvRect( mi.x1_, mi.y1_, mi.x2_ - mi.x1_, mi.y2_ - mi.y1_ ) );
 
 					runtime.ofs_d_->write( depth_image->imageData, depth_image->widthStep * depth_image->height );
+					cvResetImageROI( depth_image );
 					Sleep( 600 );
 				}
 				else 
@@ -351,7 +399,9 @@ namespace recording
 						//video_queue_writing = false;
 						//cvResize( runtime.color_.image_, color_320x240 );
 						//runtime.ofs_c_->write( color_320x240->imageData, color_320x240->widthStep * color_320x240->height );
+						cvSetImageROI( runtime.color_.image_, cvRect( mi.x1_, mi.y1_, mi.x2_ - mi.x1_, mi.y2_ - mi.y1_ ) );
 						runtime.ofs_c_->write( runtime.color_.image_->imageData, runtime.color_.image_->widthStep * runtime.color_.image_->height );
+						cvResetImageROI( runtime.color_.image_ );
 						//resized.release();
 
 					}
@@ -359,7 +409,7 @@ namespace recording
 					if( auto rect = std::move( get_image( image_frame_depth_, "DEPTH" ) ) )
 					{
 						// データのコピーと表示
-						memcpy( depth_image->imageData, (BYTE*)rect->pBits, \
+						memcpy( depth_image->imageData, static_cast< BYTE * >( rect->pBits ), \
 							depth_image->widthStep * depth_image->height );
 						cvFlip( depth_image, depth_image, 1 );
 
@@ -433,10 +483,14 @@ namespace recording
 						}
 						else
 						{
-
 							::cvShowImage( runtime.depth_.window_name_.c_str(), depth_image );
 						}
-						runtime.ofs_d_->write( ( char * )depth_image->imageData, depth_image->widthStep * depth_image->height );
+
+
+						cvSetImageROI( depth_image, cvRect( mi.x1_, mi.y1_, mi.x2_ - mi.x1_, mi.y2_ - mi.y1_ ) );
+						runtime.ofs_d_->write( depth_image->imageData, depth_image->widthStep * depth_image->height );
+						cvResetImageROI( depth_image );//なくても良いかも
+
 					}
 
 					// カメラデータの解放
@@ -486,13 +540,14 @@ namespace recording
 
 		auto const current_time = generate_current_day_and_time();
 
+		ofstream area( "area"+ current_time + ".txt" );
 		ofstream dlog( "debug_log_" + current_time + ".txt" );
 		//解像度の設定
 		NUI_IMAGE_RESOLUTION const resolution = NUI_IMAGE_RESOLUTION_640x480;
 
 		// アクティブなKinectの数を取得する
 		int kinect_count = 0;
-		::NuiGetSensorCount( & kinect_count );
+		::NuiGetSensorCount( std::addressof( kinect_count ) );
 
 		// Kinectのインスタンスを生成する
 		typedef std::vector< Runtime > Runtimes;
@@ -525,6 +580,7 @@ namespace recording
 
 		thread input_wait_thread( wait_input, ref( input_come ), ref( input ) );
 		vector< thread > kinect_thread_obj( kinect_count );
+		vector< mouse_info > mouse( kinect_count );
 
 		for( int i = 0; i < kinect_count; ++i )
 		{
@@ -577,6 +633,24 @@ namespace recording
 					continue_flag = false;
 					break;
 				}
+				
+				if( input == "start" )
+				{
+					//書き込み開始
+					//ここで保存領域も書き込み
+					for( int i = 0; i < kinect_count; ++i )	
+					{
+						area << "x1:" << mouse[ i ].x1_ << "\nx2:" << mouse[ i ].x2_ \
+							<< "\ny1:" << mouse[ i ].y1_ << "\ny2:" << mouse[ i ].y2_ << endl;
+						
+						auto const win_name = std::string( "MultiKinectPlayer[" + boost::lexical_cast< std::string >( i ) + "] Depth" );
+						cvSetMouseCallback( win_name.c_str(), on_mouse, & mouse[ i ] );
+					}
+
+
+
+				}
+
 				input_come = false;
 			}
 
