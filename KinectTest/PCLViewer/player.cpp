@@ -44,6 +44,22 @@ struct mouse_info
 	}
 };
 
+struct rect
+{
+	int x_, y_;
+	int width_, height_;
+
+	rect() : x_( 0 ), y_( 0 ), width_( 0 ), height_( 0 )
+	{
+	}
+
+	rect( int const x, int const y, int const width, int const height ) : \
+		x_( x ), y_( y ), width_( width ), height_( height ) 
+	{
+	}
+
+};
+
 
 
 struct Runtime
@@ -205,6 +221,48 @@ void create_back_image( ifstream & back_depth, IplImage * result )
 	
 }
 
+std::vector< rect > get_rect_to_draw( std::string const & filename )
+{	
+	std::ifstream area( filename );
+	//“Ç‚Ýž‚Ý”ÍˆÍ ŒÂ”\n x1:..\nx2:..\ny1:..\ny2:..; ":"‚Åx1‚È‚Ç‚Ì•¶Žš—ñ‚ð”ò‚Î‚·
+
+	if( area.is_open() )
+	{
+		int kinect_count = 0;
+		area >> kinect_count;
+		
+		std::vector< rect > result( kinect_count );
+
+		for( int i = 0; i < kinect_count; ++i )
+		{
+			std::string input;
+
+			area >> input;
+
+			int const x = boost::lexical_cast< int >( input.substr( input.find( ":" ) + 1 ) );
+
+			area >> input;
+
+			int const width = boost::lexical_cast< int >( input.substr( input.find( ":" ) + 1 ) );
+ 
+			area >> input;
+			int const y = boost::lexical_cast< int >( input.substr( input.find( ":" ) + 1 ) );
+			
+			area >> input;
+
+			int const height = boost::lexical_cast< int >( input.substr( input.find( ":" ) + 1 ) );
+
+			result[ i ].width_ = width;
+			result[ i ].height_ = height;
+			result[ i ].x_ = x;
+			result[ i ].y_ = y;
+
+		}
+	}
+	return std::vector< rect >();	
+}
+
+
 
 void draw()
 {
@@ -218,27 +276,9 @@ void draw()
 	vector< ifstream >  ifs_depth_back( 4 );//( kinect_count );
 	vector< ifstream >  ifs_color_back( 4 );//( kinect_count );
 	//std::ifstream ifs_timestamp( "debug_log.txt");
-
-	mouse_info mouse;
-	//size_t filesize = ( size_t )ifs.seekg( 0, std::ios::end).tellg();
-	//video::vfw_manager video_m( "output.avi", "output.avi", 640, 480, 1, 30, 30 * 60 * 60 );
-	//ifs.seekg( 0, std::ios::beg );
-
-	//std::cout << "size:" << filesize << std::endl;
-
+	
 	auto const filelist = get_recorded_filelist( get_filelist_from_current_dir() );
 
-	//for( int i = 0; i < 1 + 0 * filelist.size(); ++i )
-	//{
-	//	auto const filename_d = filelist[ i ];
-	//	//auto const filename_c = string( "color_" ) + boost::lexical_cast< string >\
-	//	( i ) + ".txt";
-
-	//	ifs_depth.push_back( ifstream() );
-
-	//	ifs_depth[ i ].open( filename_d, ios::binary );
-	//	//ifs_color[ i ].open( filename_c, ios::binary );
-	//
 	std::cout << "program started" << std::endl;
 	//baby __20130523T104214
 	//back            122852
@@ -258,6 +298,7 @@ void draw()
 	ifs_depth[ 2 ].open( "D:/rec2/depth__20130523T104214_2.txt", ios::binary  );
 	ifs_depth[ 3 ].open( "D:/rec2/depth__20130523T104214_3.txt", ios::binary  );
 	
+
 	IplImage * depth_back[ 4 ];
 
 	//·•ª—p‰æ‘œ—Ìˆæ‚ðŠm•Û

@@ -638,16 +638,17 @@ namespace recording
 				{
 					//‘‚«‚İŠJn
 					//‚±‚±‚Å•Û‘¶—Ìˆæ‚à‘‚«‚İ
+					area << kinect_count << endl;//ŒÂ”‚à‹L˜^
+					
 					for( int i = 0; i < kinect_count; ++i )	
 					{
+						
 						area << "x1:" << mouse[ i ].x1_ << "\nx2:" << mouse[ i ].x2_ \
 							<< "\ny1:" << mouse[ i ].y1_ << "\ny2:" << mouse[ i ].y2_ << endl;
 						
 						auto const win_name = std::string( "MultiKinectPlayer[" + boost::lexical_cast< std::string >( i ) + "] Depth" );
 						cvSetMouseCallback( win_name.c_str(), on_mouse, & mouse[ i ] );
 					}
-
-
 
 				}
 
