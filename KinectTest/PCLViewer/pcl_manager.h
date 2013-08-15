@@ -148,12 +148,57 @@ public:
 		return cloud_ptr;
 	}
 
+	//Point CLoud -> 2D
+	void show_point_cloud_to_2d( std::string const & window_name, 
+		pcl::PointCloud< pcl::PointXYZRGB >::Ptr & cloud_ptr )
+	{
+		std::cout << "show2d" << std::endl;
+		int const width = 640;
+		int const height = 480;
+		IplImage * image = cvCreateImage( cvSize( width, height ), IPL_DEPTH_16U, 1 );
+		
+
+		int cnt = 0;
+
+		for( auto it = cloud_ptr->begin(); it != cloud_ptr->end(); ++it )
+		{
+			Vector4 real_point;
+
+			real_point.x = it->x;
+			real_point.y = it->y;
+			real_point.z = it->z + 1.35;
+			//real_point.w = 100.0f;
+
+			unsigned short depth = 0;
+			long x = 0, y = 0;
+
+			NuiTransformSkeletonToDepthImage( real_point, std::addressof( x ), std::addressof( y ), std::addressof( depth ) , NUI_IMAGE_RESOLUTION_640x480 );
+			++cnt;
+
+			if( x >= 0 && x < width && y >= 0 && y < height )
+			{
+			//	//ピクセルの書き込み
+			//	if( cnt % 1000 == 0 )
+			//	{
+			//		std::cout << "x:" << x << ",y:" << y << ",z :" << depth << std::endl;
+			//	}
+				( UINT16 )( ( ( ( UINT16 * )( image->imageData +\
+						image->widthStep * y ) )[ x ] ) ) = (UINT16)( depth );
+			}
+		}
+
+		cvShowImage( window_name.c_str(), image );
+
+		cvReleaseImage( std::addressof( image ) );
+
+	}
+
 	//背景差分機能付き
 	void rotate_and_move_and_convert_RGB_and_depth_to_cloud_with_sub( cv::Ptr< IplImage > const & color, \
 		cv::Ptr< IplImage > const & depth, gp::global_parameter const & g_param, pcl::PointCloud< pcl::PointXYZRGB >::Ptr & cloud_ptr, \
 		bool const light, IplImage * const & depth_back, bool const only_depth = false )
 	{
-		const double pi = 3.141592653;/*
+		double const pi = 3.141592653;/*
 		pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud_ptr
 			( new pcl::PointCloud< pcl::PointXYZRGB > );*/
 		
@@ -228,11 +273,11 @@ public:
 							color_y >= 0 && color_y < 480 )
 						{
 							//画面内の場合
-
+							
 							auto const real_point = NuiTransformDepthImageToSkeleton( x, y, ( ( ( ( UINT16 * )( depth->imageData +\
 								depth->widthStep * y ) )[ x ] )  ), NUI_IMAGE_RESOLUTION_640x480 );
 							pcl::PointXYZRGB basic_point;
-
+							
 							auto * pixel_ptr = & color->imageData[ color_x * 4 + color->width * color_y * 4 ];
 							basic_point.x = real_point.x;
 							basic_point.y = real_point.y;
@@ -380,6 +425,8 @@ public:
 							basic_point.x = real_point.x;
 							basic_point.y = real_point.y;
 							basic_point.z = real_point.z - 1.35;
+							
+							
 
 							//basic_point.y = ( 1.0 + y * y * 0.000003 ); 
 

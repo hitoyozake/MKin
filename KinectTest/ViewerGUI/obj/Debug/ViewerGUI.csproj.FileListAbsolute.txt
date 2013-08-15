@@ -1,0 +1,9 @@
+C:\Users\inue\Documents\Development\MKin\KinectTest\ViewerGUI\bin\Debug\ViewerGUI.exe.config
+C:\Users\inue\Documents\Development\MKin\KinectTest\ViewerGUI\bin\Debug\ViewerGUI.exe
+C:\Users\inue\Documents\Development\MKin\KinectTest\ViewerGUI\bin\Debug\ViewerGUI.pdb
+C:\Users\inue\Documents\Development\MKin\KinectTest\ViewerGUI\obj\Debug\ViewerGUI.Form1.resources
+C:\Users\inue\Documents\Development\MKin\KinectTest\ViewerGUI\obj\Debug\ViewerGUI.Properties.Resources.resources
+C:\Users\inue\Documents\Development\MKin\KinectTest\ViewerGUI\obj\Debug\ViewerGUI.csproj.GenerateResource.Cache
+C:\Users\inue\Documents\Development\MKin\KinectTest\ViewerGUI\obj\Debug\ViewerGUI.exe
+C:\Users\inue\Documents\Development\MKin\KinectTest\ViewerGUI\obj\Debug\ViewerGUI.pdb
+C:\Users\inue\Documents\Development\MKin\KinectTest\ViewerGUI\obj\Debug\ViewerGUI.csprojResolveAssemblyReference.cache

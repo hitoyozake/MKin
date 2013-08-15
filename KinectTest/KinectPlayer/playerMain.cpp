@@ -518,10 +518,6 @@ void color_view( IplImage * image, IplImage * dst, int const x1, int const x2, i
 
 }
 
-
-
-
-
 std::vector< std::string > get_recorded_filelist( std::vector< std::string > const & filelist )
 {
 	std::vector< std::string > result;

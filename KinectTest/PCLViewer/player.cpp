@@ -266,6 +266,9 @@ std::vector< rect > get_rect_to_draw( std::string const & filename )
 
 void draw()
 {
+	::cvNamedWindow( "show2d",  CV_WINDOW_KEEPRATIO );
+
+
 	double const pi = 3.141592653;
 
 	using namespace std;
@@ -340,6 +343,7 @@ void draw()
 		bool next = true;
 		bool icp = false;
 		bool simple = true;
+		bool flag_2d = false;
 
 		std::array< gp::global_parameter, 4 > global_param;
 
@@ -438,8 +442,16 @@ void draw()
 					* final_cloud = * cloud_ptr[ 0 ] + * cloud_ptr[ 1 ];
 					* final_cloud += * cloud_ptr[ 2 ];
 					* final_cloud += * cloud_ptr[ 3 ];
-				}
 
+
+					if( flag_2d )
+					{
+						pcl_mn.show_point_cloud_to_2d( "show2d", final_cloud );
+						flag_2d = false;
+
+					}
+				
+				}
 				pcl_mn.update( final_cloud, "hoge" );
 				pcl_mn.spin_once();
 				for( int i = 0; i < 2; ++i )
@@ -449,6 +461,8 @@ void draw()
 				cout << "nf" << endl;
 			}
 
+			//openCV用
+			cvWaitKey( 1 );
 			
 			pcl_mn.spin_once();
 			if( ! quick )
@@ -481,7 +495,6 @@ void draw()
 					//move・・・並行移動、rotate・・・回転
 					//xyz
 					//座標数 or 角度(radian の pi 無し)
-					
 					int num = 0;
 					if( !( cin >> num ) )
 					{
@@ -530,6 +543,11 @@ void draw()
 						simple = false;
 						icp = true;
 					}
+					if( operate == "2d" )
+					{
+						flag_2d = true;
+					}
+
 				}
 				input_come = false;
 
@@ -540,6 +558,7 @@ void draw()
 	catch ( std::exception & ex ) {
 		std::cout << ex.what() << std::endl;
 	}
+	cvDestroyAllWindows();
 }
 
 int main()
