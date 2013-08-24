@@ -133,23 +133,6 @@ namespace recording
 		Sleep( 100 );
 	}
 
-	
-	
-
-	//Œ»İ‚Ì“ú‚ğæ“¾
-	//std::string generate_current_time()
-	//{
-	//	auto const today = boost::gregorian::day_clock::local_day();
-	//	std::string today_as_iso = boost::gregorian::to_iso_string( today );
-	//
-	//	using boost::posix_time::ptime;
-	//	using boost::posix_time::second_clock;
-	//	ptime now = second_clock::local_time(); // Às‚µ‚Ä‚¢‚éƒƒP[ƒ‹‚ÌŒ»İ
-	//	std::string time = boost::posix_time::to_iso_string( now );
-	//
-	//	return today_as_iso + time;
-	//
-	//}
 
 	std::string generate_current_day_and_time()
 	{
@@ -603,7 +586,7 @@ namespace recording
 		}
 
 	};
-	`
+	
 	std::vector< rect > get_rect_to_draw( std::string const & filename )
 	{	
 		std::ifstream area( filename );
@@ -709,7 +692,7 @@ namespace recording
 		{
 			mouse[ i ].event_ = true;
 			//string const drive = "D:\\recorded_data\\";
-			string const drive2 = "";//"F:\\recorded_data\\";
+			string const drive2 = "F:\\recorded_data\\";
 
 			string const filename_d = string( "depth" ) + "_" + current_time  + "_" + boost::lexical_cast< string >\
 				( i ) + ".txt";

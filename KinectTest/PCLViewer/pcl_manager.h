@@ -206,7 +206,7 @@ public:
 
 		//”wŒi·•ªƒ}ƒXƒN‚ğì¬
 
-		IplImage * mask = cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_16U, 1 );
+		IplImage * mask = cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_8U, 1 );
 
 		for( int y = 0; y < color->height; ++y )
 		{
@@ -221,22 +221,25 @@ public:
 					auto const threshold = 100;
 					if( abs( d - back_d ) < threshold )
 					{
-						( UINT16 )( ( ( ( UINT16 * )( mask->imageData +\
-						depth->widthStep * y ) )[ x ] ) ) = 0;
+						( mask->imageData +\
+						mask->widthStep * y )[ x ]= 0;
 						//”wŒi‚Æˆê
 						continue;
 					}
 					else
 					{
-						( UINT16 )( ( ( ( UINT16 * )( mask->imageData +\
-						depth->widthStep * y ) )[ x ] ) ) = d;
+						( mask->imageData +\
+						mask->widthStep * y )[ x ] = 100;
 					}
 				}
 		}
 
 		//ûk‚Æ–c’£
 		cvErode( mask, mask, NULL, 2 );  //ûk‰ñ”2
-		cvDilate( mask, mask, NULL, 4 );  //–c’£‰ñ”3
+
+		cvSmooth( mask, mask, CV_MEDIAN,  13, 13, 0, 0 );
+
+		cvDilate( mask, mask, NULL, 3 );  //–c’£‰ñ”3
 
 		for( int y = 0; y < color->height; ++y )
 		{
@@ -255,8 +258,8 @@ public:
 						auto const back_d = ( UINT16 )( ( ( ( UINT16 * )( depth_back->imageData +\
 							depth_back->widthStep * y ) )[ x ] ) >> 3  );
 
-						auto const mask_d = ( UINT16 )( ( ( ( UINT16 * )( mask->imageData +\
-							mask->widthStep * y ) )[ x ] ) >> 3  );
+						auto const mask_d = ( ( ( ( mask->imageData +\
+							mask->widthStep * y ) )[ x ] ) );
 
 						auto const threshold = 100;
 						if( abs( d - back_d ) < threshold || mask_d == 0 )
@@ -264,7 +267,6 @@ public:
 							//”wŒi‚Æˆê
 							continue;
 						}
-
 
 						HRESULT result = NuiImageGetColorPixelCoordinatesFromDepthPixelAtResolution( 
 							NUI_IMAGE_RESOLUTION_640x480, NUI_IMAGE_RESOLUTION_640x480, NULL, x, y, ( ( ( ( UINT16 * )( depth->imageData +\
