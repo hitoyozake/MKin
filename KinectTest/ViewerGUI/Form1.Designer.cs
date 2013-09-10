@@ -105,7 +105,8 @@
             "rotate",
             "move",
             "icp",
-            "2d"});
+            "2d",
+            "axis"});
             this.comboBox2.Location = new System.Drawing.Point(73, 29);
             this.comboBox2.Name = "comboBox2";
             this.comboBox2.Size = new System.Drawing.Size(60, 24);

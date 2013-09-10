@@ -311,7 +311,6 @@ void draw()
 		depth_back[ i ] = cvCreateImage( cvSize( 640, 480 ),  IPL_DEPTH_16U, 1 );
 
 		create_back_image( ifs_depth_back[ i ], depth_back[ i ] );
-
 	}
 
 	if( ifs_color[ 0 ].fail() || ifs_color[ 1 ].fail() || \
@@ -372,7 +371,7 @@ void draw()
 					if( ifs_depth[ i ].eof() )
 							continue_flag = false;
 
-					if( 1)//! quick )
+					if( 1 )//! quick )
 					{
 						if( first_time )
 						{

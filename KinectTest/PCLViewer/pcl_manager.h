@@ -47,7 +47,7 @@ public:
 		viewer_->addPointCloud( calib_cloud, viewer_id );
 
 		viewer_->setPointCloudRenderingProperties( \
-			pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, \
+			pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 5, \
 			viewer_id );
 		viewer_->addCoordinateSystem( 1.0 );
 		viewer_->initCameraParameters();
@@ -94,20 +94,22 @@ public:
 		{
 			for( int x = 0; x < color->width; ++x )
 			{
-			
 				long color_x = x, color_y = y;
 				//( UINT16 )( ( ( ( UINT16 * )( depth->imageData +\
 						depth->widthStep * y ) )[ x ] ) >> 3  ), 
-				HRESULT result =	NuiImageGetColorPixelCoordinatesFromDepthPixelAtResolution( 
-				 NUI_IMAGE_RESOLUTION_640x480, NUI_IMAGE_RESOLUTION_640x480, NULL, x, y, 0, std::addressof( color_x ), std::addressof( color_y ) );
-
+				HRESULT result = NuiImageGetColorPixelCoordinatesFromDepthPixelAtResolution( 
+				 NUI_IMAGE_RESOLUTION_640x480, NUI_IMAGE_RESOLUTION_640x480, NULL, x, y, ( ( ( ( UINT16 * )( depth->imageData +\
+								depth->widthStep * y ) )[ x ] ) ), std::addressof( color_x ), std::addressof( color_y ) );
+				
 				if( result == S_OK )
 				{
+					auto const real_point = NuiTransformDepthImageToSkeleton( x, y, ( ( ( ( UINT16 * )( depth->imageData +\
+								depth->widthStep * y ) )[ x ] )  ), NUI_IMAGE_RESOLUTION_640x480 );
 					pcl::PointXYZRGB basic_point;
 					auto * pixel_ptr = & color->imageData[ color_x * 4 + color->width * color_y * 4 ];
-					basic_point.x = x * 0.0004;
-					basic_point.y = ( y * 0.0004 ) / ( 1 + y * 20 );
-					basic_point.z = ( ( ( ( UINT16 * )( depth->imageData +\
+					basic_point.x = real_point.x;
+					basic_point.y = real_point.y;
+					basic_point.z = real_point.z; - 1.35;//( ( ( ( UINT16 * )( depth->imageData +\
 						depth->widthStep * y ) )[ x ] ) >> 3  ) * 0.0005;// / ( y * a + 1 );
 					a += 100.0;
 					basic_point.r = pixel_ptr[ 2 ];
@@ -387,6 +389,51 @@ public:
 
 	}
 
+	//zé≤âÒì]
+	Eigen::Matrix4f get_rotate_matrix( double const x_angle, double const y_angle, double const z_angle )
+	{
+		double const zsin_theta = sin( z_angle );
+		double const zcos_theta = cos( z_angle );
+		double const xsin_theta = sin( x_angle );
+		double const xcos_theta = cos( x_angle );
+		double const ysin_theta = sin( y_angle );
+		double const ycos_theta = cos( y_angle );		
+		//R( Éø, 0,0 )
+		Eigen::Matrix4f zrotate;
+		zrotate << \
+				zcos_theta, - zsin_theta, 0, 0, \
+				zsin_theta, zcos_theta,   0, 0,
+				0,0,1,0,
+				0, 0, 0, 1;
+
+		Eigen::Matrix4f xrotate;
+		xrotate << 1, 0, 0, 0, \
+				0, xcos_theta, - xsin_theta, 0,
+				0, xsin_theta, xcos_theta, 0,
+				0, 0, 0, 1;
+
+		
+		Eigen::Matrix4f yrotate;
+		yrotate << ycos_theta, 0, ysin_theta, 0, \
+				0,             1,          0, 0,
+				-ysin_theta,   0, ycos_theta, 0,
+				0, 0, 0, 1;
+
+		return zrotate * xrotate * yrotate;
+	}
+
+	Eigen::Matrix4f get_move_matrix( double const x, double const y, double const z )
+	{
+		Eigen::Matrix4f move_matrix;
+
+		move_matrix << 1, 0, 0, x,
+			           0, 1, 0, y,
+					   0, 0, 1, z,
+					   0, 0, 0, 1;
+		return move_matrix;
+	}
+
+
 	void fusion_cloud( pcl::PointCloud< pcl::PointXYZRGB >::Ptr & cloud_ptr, pcl::PointCloud< pcl::PointXYZRGB >::Ptr & result )
 	{
 		* result += * cloud_ptr;
@@ -432,9 +479,9 @@ public:
 
 							//basic_point.y = ( 1.0 + y * y * 0.000003 ); 
 
-							basic_point.r = pixel_ptr[ 2 ];
-							basic_point.g = pixel_ptr[ 1 ];
-							basic_point.b = pixel_ptr[ 0 ];
+							basic_point.r = 120;//pixel_ptr[ 2 ];
+							basic_point.g = 120;//pixel_ptr[ 1 ];
+							basic_point.b = 140;//pixel_ptr[ 0 ];
 							//110.125
 
 							cloud_ptr->points.push_back( basic_point );
@@ -478,6 +525,273 @@ public:
 			it->y += g_param.y_;
 			it->z += g_param.z_;
 		}
+	}
+
+	void cloud_task( cv::Ptr< IplImage > const & color, \
+		cv::Ptr< IplImage > const & depth, gp::global_parameter const & g_param, pcl::PointCloud< pcl::PointXYZRGB >::Ptr & cloud_ptr, \
+		bool const light, std::vector< gp::global_parameter > const & base )
+	{
+		const double pi = 3.141592653;/*
+		pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud_ptr
+			( new pcl::PointCloud< pcl::PointXYZRGB > );*/
+		
+		double py = 0;
+		for( int y = 0; y < color->height; ++y )
+		{
+			if( ! light || light && y  == 0 )
+			{
+				for( int x = 0; x < color->width; ++x )
+				{
+					if( ! light || light && x == 0 )
+					{
+						long color_x = x, color_y = y;
+						//íçà” : KinectÇê⁄ë±ÇµÇƒÇ¢Ç»ÇØÇÍÇŒìÆÇ©Ç»Ç¢
+						HRESULT result = NuiImageGetColorPixelCoordinatesFromDepthPixelAtResolution( 
+							NUI_IMAGE_RESOLUTION_640x480, NUI_IMAGE_RESOLUTION_640x480, NULL, x, y, ( ( ( ( UINT16 * )( depth->imageData +\
+								depth->widthStep * y ) )[ x ] )  ), std::addressof( color_x ), std::addressof( color_y ) );
+						if( result == S_OK && color_x >= 0 && color_x < color->width && \
+							color_y >= 0 && color_y < color->height )
+						{
+							//âÊñ ì‡ÇÃèÍçá
+
+							auto const real_point = NuiTransformDepthImageToSkeleton( x, y, ( ( ( ( UINT16 * )( depth->imageData +\
+								depth->widthStep * color_y ) )[ color_x ] )  ), NUI_IMAGE_RESOLUTION_640x480 );
+							pcl::PointXYZRGB basic_point;
+
+							auto * pixel_ptr = & color->imageData[ color_x * 4 + color->width * color_y * 4 ];
+							basic_point.x = real_point.x;
+							basic_point.y = real_point.y;
+							basic_point.z = real_point.z - 1.35;
+							
+
+							//basic_point.y = ( 1.0 + y * y * 0.000003 ); 
+
+							basic_point.r = pixel_ptr[ 2 ];
+							basic_point.g = pixel_ptr[ 1 ];
+							basic_point.b = pixel_ptr[ 0 ];
+							//110.125
+
+							cloud_ptr->points.push_back( basic_point );
+						}
+						else
+						{
+
+							if( result == E_POINTER )
+							{
+								std::cout << "NU" << endl;
+							}
+							else if( result == E_NUI_DEVICE_NOT_READY )
+							{
+								std::cout << "NUIDEVREADY_NOT" << endl;
+
+							}
+							else if( result == E_INVALIDARG )
+							{
+								std::cout << "INV" << endl;
+							}
+							else
+							{
+								//std::cout << "NAZO:";
+								//std::cout << result << endl;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		cloud_ptr->width = static_cast< int >( cloud_ptr->points.size() );
+		cloud_ptr->height = 1;
+		
+		Eigen::Matrix4f matrix;
+
+		matrix << 1, 0, 0, 0,
+			      0, 1, 0, 0,
+				  0, 0, 1, 0,
+				  0, 0, 0, 1;
+
+		//å¥ì_à⁄ìÆ
+		for( auto itt = base.crbegin(); itt != base.crend(); ++itt )
+		{
+			matrix *= get_rotate_matrix( itt->x_theta_, itt->y_theta_, itt->z_theta_ );
+			matrix *= get_move_matrix( itt->x_, itt->y_, itt->z_ );
+		//	pcl::transformPointCloud( * cloud_ptr, * cloud_ptr, matrix );
+		}
+
+		matrix *= get_rotate_matrix( g_param.x_theta_, g_param.y_theta_, g_param.z_theta_ );
+		matrix *= get_move_matrix( g_param.x_, g_param.y_, g_param.z_ );
+		
+		pcl::transformPointCloud( * cloud_ptr, * cloud_ptr, matrix );
+	}
+
+	void cloud_task_sub( cv::Ptr< IplImage > const & color, \
+		cv::Ptr< IplImage > const & depth, gp::global_parameter const & g_param, pcl::PointCloud< pcl::PointXYZRGB >::Ptr & cloud_ptr, \
+		bool const light, std::vector< gp::global_parameter > const & base, IplImage * const & depth_back )
+	{
+		const double pi = 3.141592653;/*
+		pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud_ptr
+			( new pcl::PointCloud< pcl::PointXYZRGB > );*/
+		
+		double py = 0;
+		
+		
+
+
+		IplImage * mask = cvCreateImage( cvSize( depth_back->width, depth_back->height ), IPL_DEPTH_8U, 1 );
+
+		for( int y = 0; y < color->height; ++y )
+		{
+				for( int x = 0; x < color->width; ++x )
+				{
+					auto const d = ( UINT16 )( ( ( ( UINT16 * )( depth->imageData +\
+						depth->widthStep * y ) )[ x ] ) );
+
+					auto const back_d = ( UINT16 )( ( ( ( UINT16 * )( depth_back->imageData +\
+						depth_back->widthStep * y ) )[ x ] ) );
+
+					auto const threshold = 100;
+					if( abs( d - back_d ) < threshold )
+					{
+						( mask->imageData +\
+						mask->widthStep * y )[ x ]= 0;
+						//îwåiÇ∆àÍèè
+						continue;
+					}
+					else
+					{
+						( mask->imageData +\
+						mask->widthStep * y )[ x ] = 100;
+					}
+				}
+		}
+
+		//é˚èkÇ∆ñcí£
+		cvErode( mask, mask, NULL, 2 );  //é˚èkâÒêî2
+
+		cvSmooth( mask, mask, CV_MEDIAN,  13, 13, 0, 0 );
+
+		cvDilate( mask, mask, NULL, 3 );  //ñcí£âÒêî3
+
+
+		for( int y = 0; y < color->height; ++y )
+		{
+			if( ! light || light && y % 2 == 0 )
+			{
+				for( int x = 0; x < color->width; ++x )
+				{
+					if( ! light || light && x % 2 == 0 )
+					{
+						long color_x = x, color_y = y;
+						//íçà” : KinectÇê⁄ë±ÇµÇƒÇ¢Ç»ÇØÇÍÇŒìÆÇ©Ç»Ç¢
+
+						auto const d = ( UINT16 )( ( ( ( UINT16 * )( depth->imageData +\
+							depth->widthStep * y ) )[ x ] ) >> 3 );
+						
+						auto const back_d = ( UINT16 )( ( ( ( UINT16 * )( depth_back->imageData +\
+							depth_back->widthStep * y ) )[ x ] ) >> 3  );
+
+						auto const mask_d = ( ( ( ( mask->imageData +\
+							mask->widthStep * y ) )[ x ] ) );
+
+						auto const threshold = 100;
+						if( abs( d - back_d ) < threshold || mask_d == 0 )
+						{
+							//îwåiÇ∆àÍèè
+							continue;
+						}
+
+						HRESULT result = NuiImageGetColorPixelCoordinatesFromDepthPixelAtResolution( 
+							NUI_IMAGE_RESOLUTION_640x480, NUI_IMAGE_RESOLUTION_640x480, NULL, x, y, ( ( ( ( UINT16 * )( depth->imageData +\
+								depth->widthStep * y ) )[ x ] )  ), std::addressof( color_x ), std::addressof( color_y ) );
+						if( result == S_OK && color_x >= 0 && color_x < color->width && \
+							color_y >= 0 && color_y < color->height )
+						{
+							//âÊñ ì‡ÇÃèÍçá
+
+							auto const real_point = NuiTransformDepthImageToSkeleton( x, y, ( ( ( ( UINT16 * )( depth->imageData +\
+								depth->widthStep * color_y ) )[ color_x ] )  ), NUI_IMAGE_RESOLUTION_640x480 );
+							pcl::PointXYZRGB basic_point;
+
+							auto * pixel_ptr = & color->imageData[ color_x * 4 + color->width * color_y * 4 ];
+							basic_point.x = real_point.x;
+							basic_point.y = real_point.y;
+							basic_point.z = real_point.z - 1.35;
+							
+
+							//basic_point.y = ( 1.0 + y * y * 0.000003 ); 
+
+							basic_point.r = 120;//pixel_ptr[ 2 ];
+							basic_point.g = 120;//pixel_ptr[ 1 ];
+							basic_point.b = 130;//pixel_ptr[ 0 ];
+							//110.125
+							cloud_ptr->points.push_back( basic_point );
+						}
+						else
+						{
+
+							if( result == E_POINTER )
+							{
+								std::cout << "NU" << endl;
+							}
+							else if( result == E_NUI_DEVICE_NOT_READY )
+							{
+								std::cout << "NUIDEVREADY_NOT" << endl;
+
+							}
+							else if( result == E_INVALIDARG )
+							{
+								std::cout << "INV" << endl;
+							}
+							else
+							{
+								//std::cout << "NAZO:";
+								//std::cout << result << endl;
+							}
+						}
+					}
+				}
+			}
+		}
+		if( depth->width != depth_back->width )
+		{
+			std::cout << "what" << std::endl;
+		}
+
+		cloud_ptr->width = static_cast< int >( cloud_ptr->points.size() );
+		cloud_ptr->height = 1;
+		
+		Eigen::Matrix4f matrix;
+
+		matrix << 1, 0, 0, 0,
+			      0, 1, 0, 0,
+				  0, 0, 1, 0,
+				  0, 0, 0, 1;
+
+		//å¥ì_à⁄ìÆ
+		for( auto itt = base.crbegin(); itt != base.crend(); ++itt )
+		{
+			matrix *= get_rotate_matrix( itt->x_theta_, itt->y_theta_, itt->z_theta_ );
+			matrix *= get_move_matrix( itt->x_, itt->y_, itt->z_ );
+		//	pcl::transformPointCloud( * cloud_ptr, * cloud_ptr, matrix );
+		}
+
+		matrix *= get_rotate_matrix( g_param.x_theta_, g_param.y_theta_, g_param.z_theta_ );
+		matrix *= get_move_matrix( g_param.x_, g_param.y_, g_param.z_ );
+		
+		pcl::transformPointCloud( * cloud_ptr, * cloud_ptr, matrix );
+		pcl::PointCloud< pcl::PointXYZRGB >::Ptr final_cloud( new pcl::PointCloud< pcl::PointXYZRGB > );
+
+		for( auto it = cloud_ptr->begin(); it != cloud_ptr->end(); ++it )
+		{
+			if( it->z > -0.075 )
+			{
+				final_cloud->push_back( * it );
+			}
+		}
+
+		* cloud_ptr = * final_cloud;
+
+		//cvRelease( mask->imageData );
 	}
 
 	void update( pcl::PointCloud< pcl::PointXYZRGB >::ConstPtr const & cloud, std::string const & viewer_id )

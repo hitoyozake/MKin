@@ -61,6 +61,7 @@ namespace recording
 		boost::shared_ptr< std::ofstream > ofs_c_;
 
 		boost::shared_ptr< video::vfw_manager > vw_;
+		std::string drive_;
 
 		int id_;
 		bool record_start_flag_;
@@ -148,10 +149,12 @@ namespace recording
 		return now_str;
 	}
 
-	void init( std::vector< Runtime > & runtime, std::string const & current_time, bool const color_view = false )
+	int init( std::vector< Runtime > & runtime, std::string const & current_time, bool const color_view = false )
 	{
 		using namespace std;
 		NUI_IMAGE_RESOLUTION const resolution = NUI_IMAGE_RESOLUTION_640x480;
+
+
 
 		for( size_t i = 0; i < runtime.size(); ++i )
 		{
@@ -162,9 +165,9 @@ namespace recording
 			runtime[i].kinect_->NuiInitialize( NUI_INITIALIZE_FLAG_USES_COLOR | NUI_INITIALIZE_FLAG_USES_DEPTH
 				| NUI_INITIALIZE_FLAG_USES_AUDIO );
 
-			std::string drive = "";//"F:\\recorded_data\\";
+
 			runtime[ i ].vw_ = boost::shared_ptr< video::vfw_manager >
-				( new video::vfw_manager( drive + to_string( i ) + "_" + current_time + "_output.avi", to_string( i ) + "_" + current_time + "_output.avi", \
+				( new video::vfw_manager( (std::string)"C:/recorded_data/" + to_string( i ) + "_" + current_time + "_output.avi", to_string( i ) + "_" + current_time + "_output.avi", \
 				640, 480, 1, 30, 30 * 60 * 60 * 4 ) );
 
 			runtime[ i ].color_.event_ = ::CreateEvent( 0, TRUE, FALSE, 0 );
@@ -219,6 +222,8 @@ namespace recording
 				);
 
 		}
+
+		return 0;
 	}
 
 	boost::optional< NUI_LOCKED_RECT > get_image( NUI_IMAGE_FRAME const & image_frame, std::string const & kind )
@@ -685,15 +690,13 @@ namespace recording
 		vector< thread > kinect_thread_obj( kinect_count );
 		vector< mouse_info > mouse( kinect_count );
 
-
-		
+		ifstream drive_info( "./drive.txt" );
 
 		for( int i = 0; i < kinect_count; ++i )
 		{
-			mouse[ i ].event_ = true;
-			//string const drive = "D:\\recorded_data\\";
-			string const drive2 = "F:\\recorded_data\\";
+			drive_info >> runtime[i].drive_;
 
+			mouse[ i ].event_ = true;
 			string const filename_d = string( "depth" ) + "_" + current_time  + "_" + boost::lexical_cast< string >\
 				( i ) + ".txt";
 			string const filename_c = string( "color" ) +  "_" + current_time + "_" + boost::lexical_cast< string >\
@@ -704,9 +707,8 @@ namespace recording
 
 			runtime[ i ].ofs_c_ = boost::shared_ptr< ofstream >( new ofstream() );
 			runtime[ i ].ofs_d_ = boost::shared_ptr< ofstream >( new ofstream() );
-			if( i >= 2 )runtime[ i ].ofs_d_->open(  drive2 + filename_d, ios::binary );
-			else runtime[ i ].ofs_d_->open( filename_d, ios::binary );
-			runtime[ i ].ofs_c_->open(  drive2 + filename_c, ios::binary );
+			runtime[ i ].ofs_d_->open( runtime[i].drive_ + ":/recorded_data/" + filename_d, ios::binary );
+			runtime[ i ].ofs_c_->open( runtime[i].drive_ + ":/recorded_data/" + filename_c, ios::binary );
 			
 			runtime[ i ].id_ = i;
 			
