@@ -25,6 +25,9 @@
     <Filter Include="ソース ファイル\filesystem">
       <UniqueIdentifier>{76ae882c-9950-43c6-89bd-62a77e4dce32}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ソース ファイル\cpp_plot">
+      <UniqueIdentifier>{b3b2befd-0a67-4bd5-9b9c-ab36695d5b57}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -42,6 +45,12 @@
     <ClCompile Include="filesystem.cpp">
       <Filter>ソース ファイル\filesystem</Filter>
     </ClCompile>
+    <ClCompile Include="cpp_plot.cpp">
+      <Filter>ソース ファイル\cpp_plot</Filter>
+    </ClCompile>
+    <ClCompile Include="sound_recorder.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="precompiled.h">
@@ -58,6 +67,12 @@
     </ClInclude>
     <ClInclude Include="filesystem.h">
       <Filter>ソース ファイル\filesystem</Filter>
+    </ClInclude>
+    <ClInclude Include="cpp_plot.h">
+      <Filter>ソース ファイル\cpp_plot</Filter>
+    </ClInclude>
+    <ClInclude Include="sound_recorder.h">
+      <Filter>ソース ファイル</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

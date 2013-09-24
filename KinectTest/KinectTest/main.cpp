@@ -8,7 +8,6 @@
 #include <queue>
 #include <chrono>
 #include <boost/format.hpp>
-
 #include <boost\shared_ptr.hpp>
 #include <boost/optional.hpp>
 #include <boost/algorithm/string.hpp>
@@ -31,6 +30,8 @@
 
 #include "video.h"
 #include "filesystem.h"
+#include "sound_recorder.h"
+
 
 #pragma comment( lib, "x86/Kinect10.lib" )
 #pragma comment( lib, "libboost_timer-vc110-mt-gd-1_51.lib" )
@@ -649,7 +650,11 @@ namespace recording
 		int kinect_count = 0;
 		::NuiGetSensorCount( std::addressof( kinect_count ) );
 
-		auto const list = get_rect_to_draw( "area.txt" );
+		//B‰e”ÍˆÍƒtƒ@ƒCƒ‹‚ğ“Ç‚İ‚Ş
+		std::string area_filename;
+		std::getline( std::cin, area_filename );
+
+		auto const list = get_rect_to_draw( area_filename );
 
 		if( list.size() != static_cast< std::size_t >( kinect_count ) )
 		{
@@ -715,8 +720,11 @@ namespace recording
 			kinect_thread_obj[ i ] = thread( kinect_thread, \
 				ref( runtime[ i ] ), ref( go_sign[ i ] ),ref( end_sign[ i ] ), \
 				ref( ready_sign[ i ] ), ref( mouse[ i ] ) );
-
 		}
+
+		sound_recorder::sound_recorder snd_rec( current_time + ".wav" );
+
+		snd_rec.open_file();
 
 		for( int i = 0; i < kinect_count; ++i )	
 		{
@@ -800,9 +808,10 @@ namespace recording
 		}
 		//Window‚ğ•Â‚¶‚é
 		::cvDestroyAllWindows();
+		snd_rec.stop_recording();
 
 		std::cout << "PROGRAM WAS CLOSED" << std::endl;
-
+		
 	}
 }
 
