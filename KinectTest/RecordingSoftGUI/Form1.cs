@@ -69,7 +69,7 @@ namespace RecordingSoftGUI
                     recorder = new Process();
                     recorder.StartInfo.RedirectStandardInput = true;
                     recorder.StartInfo.UseShellExecute = false;
-                    area_selector.EnableRaisingEvents = true;
+                    //area_selector.EnableRaisingEvents = true;
                     recorder.StartInfo.FileName = @"./KinectTest.exe";
                     //Exitした時の処理を追加
                     recorder.Exited += recorder_exited;
