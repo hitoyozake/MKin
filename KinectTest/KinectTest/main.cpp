@@ -375,9 +375,11 @@ namespace recording
 						//resized.release();
 						cvSetImageROI( depth_image, cvRect( mi.x1_, mi.y1_, mi.x2_ - mi.x1_, mi.y2_ - mi.y1_ ) );
 						cvSetImageROI( runtime.color_.image_, cvRect( mi.x1_, mi.y1_, mi.x2_ - mi.x1_, mi.y2_ - mi.y1_ ) );
+						cvCopy( runtime.color_.image_, runtime.color_.buf_ );
+						cvCopy( runtime.depth_.image_, runtime.depth_.buf_ );
 
-						runtime.ofs_d_->write( depth_image->imageData, depth_image->widthStep * depth_image->height );
-						runtime.ofs_c_->write( runtime.color_.image_->imageData, runtime.color_.image_->widthStep * runtime.color_.image_->height );
+						runtime.ofs_d_->write( runtime.depth_.buf_->imageData, runtime.depth_.buf_->widthStep * runtime.depth_.buf_->height );
+						runtime.ofs_c_->write( runtime.color_.buf_->imageData, runtime.color_.buf_->widthStep * runtime.color_.buf_->height );
 						cvResetImageROI( depth_image );
 						cvResetImageROI( runtime.color_.image_ );
 					}
