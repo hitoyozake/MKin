@@ -80,51 +80,6 @@ namespace recording
 		}
 	};
 
-	void on_mouse( int event, int x, int y, int flags, void * param )
-	{
-		auto mouse = static_cast< mouse_info * >( param );
-
-		if( mouse->event_ )
-		{
-			switch( event )
-			{
-			case CV_EVENT_MOUSEMOVE:
-				break;
-			case CV_EVENT_LBUTTONDOWN:
-				cout << "mouse Left button holding......." << endl;
-				mouse->flag_ = false;
-				mouse->x1_ = x;
-				mouse->y1_ = y;
-				// When Left button is pressed, ...
-				break;
-
-			case CV_EVENT_LBUTTONUP:
-				mouse->x2_ = x;
-				mouse->y2_ = y;
-				if( mouse->x1_ > mouse->x2_ )
-				{
-					swap( mouse->x1_, mouse->x2_ );
-				}
-				if( mouse->y1_ > mouse->y2_ )
-				{
-					swap( mouse->y1_, mouse->y2_ );
-				}
-				cout << "mouse Left button released......" << endl;
-				mouse->flag_ = true;
-				// When Left button is released, ...
-				break;
-
-			case CV_EVENT_RBUTTONDOWN:
-				break;
-
-			case CV_EVENT_RBUTTONUP:
-				break;
-
-			default:
-				break;
-			}
-		}
-	}
 
 	void set_mortor( long const angle, INuiSensor & kinect )
 	{
@@ -281,7 +236,10 @@ namespace recording
 		while( ! image_queue.empty() )
 		{
 			if( image_queue.size() % 50 == 0 )
-				std::cout << "ending : queue SIZE : " << image_queue.size() << std::endl;
+			{
+				//残り書き込み量を表示
+				std::cout << "now ending : last queue SIZE : " << image_queue.size() << std::endl;
+			}
 			auto image = image_queue.front();
 			image_queue.pop();
 			vfw->write( true, image );
@@ -314,6 +272,8 @@ namespace recording
 		cv::Ptr< IplImage > color_320x240 = cvCreateImage( cvSize( 320, 240 ), IPL_DEPTH_8U, 4 );
 		cout << "test" << endl;
 
+		int debug_counter = 0;
+
 		// カメラデータの取得用フレームオブジェクト
 		NUI_IMAGE_FRAME image_frame_depth_;
 		NUI_IMAGE_FRAME image_frame_color_;
@@ -340,7 +300,6 @@ namespace recording
 					auto hRes = runtime.kinect_->NuiImageStreamGetNextFrame( runtime.depth_.stream_handle_, 0, image_frame_depth );
 					if( hRes != S_OK ){
 						printf(" ERR: [%d]DEPTH%dフレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.\n", runtime.id_, count, hRes);
-						ready_sign = 1;
 						image_get_succeeded = false;
 					}
 				}
@@ -348,13 +307,13 @@ namespace recording
 					auto hRes = runtime.kinect_->NuiImageStreamGetNextFrame( runtime.color_.stream_handle_, 0, image_frame_color );
 					if( hRes != S_OK ){
 						printf(" ERR: [%d]COLOR%dフレーム取得失敗. NuiImageStreamGetNextFrame() returns %d.\n", runtime.id_, count, hRes );
-						ready_sign = 1;
 						image_get_succeeded = false;
 					}
 				}
 				// 画像データの取得
 				if( ! image_get_succeeded )
 				{
+
 					//if failed then write pre frame
 					//cvResize( runtime.color_.image_, resized );
 
@@ -372,18 +331,32 @@ namespace recording
 					//video_queue_writing = false;
 					if( runtime.record_start_flag_ )
 					{
-						//resized.release();
-						cvSetImageROI( depth_image, cvRect( mi.x1_, mi.y1_, mi.x2_ - mi.x1_, mi.y2_ - mi.y1_ ) );
-						cvSetImageROI( runtime.color_.image_, cvRect( mi.x1_, mi.y1_, mi.x2_ - mi.x1_, mi.y2_ - mi.y1_ ) );
-						cvCopy( runtime.color_.image_, runtime.color_.buf_ );
-						cvCopy( runtime.depth_.image_, runtime.depth_.buf_ );
-
 						runtime.ofs_d_->write( runtime.depth_.buf_->imageData, runtime.depth_.buf_->widthStep * runtime.depth_.buf_->height );
 						runtime.ofs_c_->write( runtime.color_.buf_->imageData, runtime.color_.buf_->widthStep * runtime.color_.buf_->height );
 						cvResetImageROI( depth_image );
+						cvSetImageROI( depth_image, cvRect( mi.x1_, mi.y1_, mi.x2_ - mi.x1_, mi.y2_ - mi.y1_ ) );
+
+						cvCopy( depth_image, runtime.depth_.buf_ );
+
+						runtime.ofs_d_->write( runtime.depth_.buf_->imageData, runtime.depth_.buf_->widthStep * runtime.depth_.buf_->height );
+
+						cvSetImageROI( runtime.color_.image_, cvRect( mi.x1_, mi.y1_, mi.x2_ - mi.x1_, mi.y2_ - mi.y1_ ) );
+
+						cvCopy( runtime.color_.image_, runtime.color_.buf_ );
+
+						runtime.ofs_c_->write( \
+							runtime.color_.buf_->imageData, runtime.color_.buf_->widthStep * runtime.color_.buf_->height );
+
+
+						::cvShowImage( runtime.color_.window_name_.c_str(), runtime.color_.image_ );
+
 						cvResetImageROI( runtime.color_.image_ );
+
+						cvResetImageROI( depth_image );//なくても良いかも
+
 					}
-					Sleep( 600 );
+					Sleep( 300 );
+					ready_sign = 1;
 				}
 				else 
 				{ 
@@ -395,8 +368,6 @@ namespace recording
 
 						//左右反転
 						cvFlip( runtime.color_.image_, runtime.color_.image_, 1 );
-
-
 						//cvResize( runtime.color_.image_, resized );
 
 						//if( video_queue_writing )
@@ -637,11 +608,34 @@ namespace recording
 		return std::vector< rect >();	
 	}
 
+	void write_settingfile( std::string const & current_time, std::vector< std::string > const  & output_list )
+	{
+		std::ofstream ofs( std::string( "setting_" ) + current_time + ".txt" );
+
+		ofs << current_time << std::endl;
+
+		for( auto it = output_list.cbegin(); it != output_list.cend(); ++it )
+		{
+			ofs << * it << std::endl;
+		}
+
+
+		ofs.close();
+		
+	}
+
 	void draw()
 	{
 		using namespace std;
 
 		auto const current_time = generate_current_day_and_time();
+		
+		std::vector< std::string > setting_write_str;
+		//current_time
+		//キネクトの台数
+		//range
+		//drive
+		setting_write_str.push_back( current_time );
 
 		ofstream dlog( "debug_log_" + current_time + ".txt" );
 		//解像度の設定
@@ -663,7 +657,8 @@ namespace recording
 			std::cout << "Kinectの数と設定ファイルに書かれたKinectの数が不一致です．" << std::endl;
 			return;
 		}
-
+		setting_write_str.push_back( boost::lexical_cast< std::string >( kinect_count ) );
+		
 
 		// Kinectのインスタンスを生成する
 		typedef std::vector< Runtime > Runtimes;
@@ -699,11 +694,34 @@ namespace recording
 
 		ifstream drive_info( "./drive.txt" );
 
+		sound_recorder::sound_recorder snd_rec( current_time + ".wav" );
+
+		snd_rec.open_file();
+
+		for( int i = 0; i < kinect_count; ++i )	
+		{
+
+			mouse[ i ].x1_ = list[ i ].x_;
+			mouse[ i ].x2_ = list[ i ].x_ + list[ i ].width_;
+			mouse[ i ].y1_ = list[ i ].y_;
+			mouse[ i ].y2_ = list[ i ].y_ + list[ i ].height_;
+
+			runtime[ i ].color_.buf_ = cvCreateImage( cvSize( mouse[ i ].x2_ - mouse[ i ].x1_, \
+				mouse[ i ].y2_ - mouse[ i ].y1_ ),IPL_DEPTH_8U, 4 );
+			runtime[ i ].depth_.buf_ = cvCreateImage( cvSize( mouse[ i ].x2_ - mouse[ i ].x1_, \
+				mouse[ i ].y2_ - mouse[ i ].y1_ ),IPL_DEPTH_16U, 1 );
+			runtime[ i ].record_start_flag_ = true;
+
+
+			setting_write_str.push_back( ( std::string )"width:" + boost::lexical_cast< std::string >( mouse[ i ].x2_ - mouse[ i ].x1_ ) );
+			setting_write_str.push_back( ( std::string )"height:" + boost::lexical_cast< std::string >( mouse[ i ].y2_ - mouse[ i ].y1_ ) );
+
+		}
+
 		for( int i = 0; i < kinect_count; ++i )
 		{
 			drive_info >> runtime[i].drive_;
-
-			mouse[ i ].event_ = true;
+			setting_write_str.push_back( runtime[ i ].drive_ );
 			string const filename_d = string( "depth" ) + "_" + current_time  + "_" + boost::lexical_cast< string >\
 				( i ) + ".txt";
 			string const filename_c = string( "color" ) +  "_" + current_time + "_" + boost::lexical_cast< string >\
@@ -724,25 +742,8 @@ namespace recording
 				ref( ready_sign[ i ] ), ref( mouse[ i ] ) );
 		}
 
-		sound_recorder::sound_recorder snd_rec( current_time + ".wav" );
-
-		snd_rec.open_file();
-
-		for( int i = 0; i < kinect_count; ++i )	
-		{
-			mouse[ i ].event_ = false;
-
-			mouse[ i ].x1_ = list[ i ].x_;
-			mouse[ i ].x2_ = list[ i ].x_ + list[ i ].width_;
-			mouse[ i ].y1_ = list[ i ].y_;
-			mouse[ i ].y2_ = list[ i ].y_ + list[ i ].height_;
-
-			runtime[ i ].color_.buf_ = cvCreateImage( cvSize( mouse[ i ].x2_ - mouse[ i ].x1_, \
-				mouse[ i ].y2_ - mouse[ i ].y1_ ),IPL_DEPTH_8U, 4 );
-			runtime[ i ].depth_.buf_ = cvCreateImage( cvSize( mouse[ i ].x2_ - mouse[ i ].x1_, \
-				mouse[ i ].y2_ - mouse[ i ].y1_ ),IPL_DEPTH_16U, 1 );
-			runtime[ i ].record_start_flag_ = true;
-		}
+		//セッティングファイルの書き出し
+		write_settingfile( current_time, setting_write_str );
 
 		//開始 ->find_ifで書き換え可能コード
 		for( auto & i : go_sign )

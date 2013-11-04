@@ -41,6 +41,13 @@ namespace ViewerGUI
         String[] operation = { "rotate" , "move" };
         Process viewer = null;
 
+
+        void send_command_end()
+        {
+            viewer.StandardInput.WriteLine( "ie" );
+            
+        }
+
         void send_cmd( String num, String operation, String axis, String value )
         {
             viewer.StandardInput.WriteLine( "cmd" );
@@ -68,43 +75,61 @@ namespace ViewerGUI
 
             if ( checkBox1.Checked )
             {
-                if ( richTextBox2.Lines.Length == 0 )
-                    return;
-                
-                //,区切りで格納
-                String[] param = richTextBox2.Lines[ 0 ].Split(',');
-
-                send_cmd( param[0] , param[1] , param[2] , param[3] );
-
-                String[] strs = new String[richTextBox2.Lines.Length - 1];
-                for ( int i = 1; i < richTextBox2.Lines.Length; ++i )
+                while ( true )
                 {
-                    strs[i - 1] = richTextBox2.Lines[i];
-                }
+                    if ( richTextBox2.Lines.Length == 0 )
+                    {
+                        send_command_end();
+                        button1.Enabled = true;
+                        return;                        
+                    }
+                    //,区切りで格納
+                    String[] param = richTextBox2.Lines[0].Split( ',' );　//ボタンの有効化
 
-                richTextBox2.Clear();
-                for ( int i = 0; i < strs.Length; ++i )
-                    richTextBox2.Text += strs[i] + "\n";
+                    send_cmd( param[0] , param[1] , param[2] , param[3] );
+
+                    String[] strs = new String[richTextBox2.Lines.Length - 1];
+                    for ( int i = 1; i < richTextBox2.Lines.Length; ++i )
+                    {
+                        strs[i - 1] = richTextBox2.Lines[i];
+                    }
+
+                    richTextBox2.Clear();
+                    for ( int i = 0; i < strs.Length; ++i )
+                        richTextBox2.Text += strs[i] + "\n";
+
+                    while ( true )
+                    {
+                        var output = viewer.StandardOutput.ReadLine();
+
+                        richTextBox3.Text += output + "\n";
+
+                        if ( output == "nf" )
+                        {
+                            break;
+                        }
+                    }
+                }
             }
             else
             {
                 send_cmd( comboBox1.SelectedItem.ToString() , comboBox2.SelectedItem.ToString() ,
                 comboBox3.SelectedItem.ToString() , numericUpDown1.Value.ToString() );
-            }
 
-            while ( true )
-            {
-                var output = viewer.StandardOutput.ReadLine();
-
-                richTextBox3.Text += output + "\n";
-
-                if ( output == "nf" )
+                while ( true )
                 {
-                    break;
+                    var output = viewer.StandardOutput.ReadLine();
+
+                    richTextBox3.Text += output + "\n";
+
+                    if ( output == "nf" )
+                    {
+                        break;
+                    }
                 }
+                button1.Enabled = true; //ボタンの有効化
             }
 
-            button1.Enabled = true;
         }
 
         private void button2_Click( object sender , EventArgs e )
@@ -124,6 +149,11 @@ namespace ViewerGUI
         private void comboBox2_SelectedIndexChanged( object sender , EventArgs e )
         {
 
+        }
+
+        private void button3_Click( object sender , EventArgs e )
+        {
+            send_command_end();
         }
     }
 }

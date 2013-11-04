@@ -42,6 +42,7 @@
             this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.richTextBox2 = new System.Windows.Forms.RichTextBox();
             this.richTextBox3 = new System.Windows.Forms.RichTextBox();
+            this.button3 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -49,7 +50,7 @@
             // 
             this.button1.Location = new System.Drawing.Point(9, 76);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(301, 81);
+            this.button1.Size = new System.Drawing.Size(323, 81);
             this.button1.TabIndex = 0;
             this.button1.Text = "実行";
             this.button1.UseVisualStyleBackColor = true;
@@ -155,9 +156,9 @@
             // 
             // button2
             // 
-            this.button2.Location = new System.Drawing.Point(175, 163);
+            this.button2.Location = new System.Drawing.Point(139, 163);
             this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(135, 56);
+            this.button2.Size = new System.Drawing.Size(193, 56);
             this.button2.TabIndex = 10;
             this.button2.Text = "▶";
             this.button2.UseVisualStyleBackColor = true;
@@ -175,34 +176,46 @@
             // checkBox1
             // 
             this.checkBox1.AutoSize = true;
+            this.checkBox1.Font = new System.Drawing.Font("MS UI Gothic", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
             this.checkBox1.Location = new System.Drawing.Point(369, 29);
             this.checkBox1.Name = "checkBox1";
-            this.checkBox1.Size = new System.Drawing.Size(80, 16);
+            this.checkBox1.Size = new System.Drawing.Size(131, 20);
             this.checkBox1.TabIndex = 12;
-            this.checkBox1.Text = "checkBox1";
+            this.checkBox1.Text = "テキストから入力";
             this.checkBox1.UseVisualStyleBackColor = true;
             // 
             // richTextBox2
             // 
-            this.richTextBox2.Location = new System.Drawing.Point(324, 63);
+            this.richTextBox2.Location = new System.Drawing.Point(369, 107);
             this.richTextBox2.Name = "richTextBox2";
-            this.richTextBox2.Size = new System.Drawing.Size(192, 215);
+            this.richTextBox2.Size = new System.Drawing.Size(293, 240);
             this.richTextBox2.TabIndex = 13;
             this.richTextBox2.Text = "";
             // 
             // richTextBox3
             // 
-            this.richTextBox3.Location = new System.Drawing.Point(324, 294);
+            this.richTextBox3.Location = new System.Drawing.Point(369, 353);
             this.richTextBox3.Name = "richTextBox3";
-            this.richTextBox3.Size = new System.Drawing.Size(192, 164);
+            this.richTextBox3.Size = new System.Drawing.Size(293, 254);
             this.richTextBox3.TabIndex = 14;
             this.richTextBox3.Text = "";
+            // 
+            // button3
+            // 
+            this.button3.Location = new System.Drawing.Point(14, 163);
+            this.button3.Name = "button3";
+            this.button3.Size = new System.Drawing.Size(119, 56);
+            this.button3.TabIndex = 15;
+            this.button3.Text = "コマンド入力終了";
+            this.button3.UseVisualStyleBackColor = true;
+            this.button3.Click += new System.EventHandler(this.button3_Click);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(541, 486);
+            this.ClientSize = new System.Drawing.Size(860, 619);
+            this.Controls.Add(this.button3);
             this.Controls.Add(this.richTextBox3);
             this.Controls.Add(this.richTextBox2);
             this.Controls.Add(this.checkBox1);
@@ -242,6 +255,7 @@
         private System.Windows.Forms.CheckBox checkBox1;
         private System.Windows.Forms.RichTextBox richTextBox2;
         private System.Windows.Forms.RichTextBox richTextBox3;
+        private System.Windows.Forms.Button button3;
     }
 }
 

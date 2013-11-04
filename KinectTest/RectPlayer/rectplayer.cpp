@@ -293,25 +293,25 @@ void draw()
 
 
 	ifs_depth_back[ 0 ].open( "F:/recorded_data/depth_20130827T094432_0.txt", ios::binary  );
-	ifs_depth_back[ 1 ].open( "C:/recorded_data/depth_20130827T094432_1.txt", ios::binary  );
+	/*ifs_depth_back[ 1 ].open( "C:/recorded_data/depth_20130827T094432_1.txt", ios::binary  );
 	ifs_depth_back[ 2 ].open( "C:/recorded_data/depth_20130827T094432_2.txt", ios::binary  );
-	ifs_depth_back[ 3 ].open( "C:/recorded_data/depth_20130827T094432_3.txt", ios::binary  );
+	ifs_depth_back[ 3 ].open( "C:/recorded_data/depth_20130827T094432_3.txt", ios::binary  );*/
 	
 	ifs_color[ 0 ].open( "F:/recorded_data/color_20130827T094819_0.txt", ios::binary  );
-	ifs_color[ 1 ].open( "C:/recorded_data/color_20130827T094819_1.txt", ios::binary  );
-	ifs_color[ 2 ].open( "C:/recorded_data/color_20130827T094819_2.txt", ios::binary  );
-	ifs_color[ 3 ].open( "C:/recorded_data/color_20130827T094819_3.txt", ios::binary  );
+	//ifs_color[ 1 ].open( "C:/recorded_data/color_20130827T094819_1.txt", ios::binary  );
+	//ifs_color[ 2 ].open( "C:/recorded_data/color_20130827T094819_2.txt", ios::binary  );
+	//ifs_color[ 3 ].open( "C:/recorded_data/color_20130827T094819_3.txt", ios::binary  );
 	ifs_depth[ 0 ].open( "F:/recorded_data/depth_20130827T094819_0.txt", ios::binary  );
-	ifs_depth[ 1 ].open( "C:/recorded_data/depth_20130827T094819_1.txt", ios::binary  );
+	/*ifs_depth[ 1 ].open( "C:/recorded_data/depth_20130827T094819_1.txt", ios::binary  );
 	ifs_depth[ 2 ].open( "C:/recorded_data/depth_20130827T094819_2.txt", ios::binary  );
 	ifs_depth[ 3 ].open( "C:/recorded_data/depth_20130827T094819_3.txt", ios::binary  );
-	
+	*/
 	
 
 	/*if( ifs_color[ 0 ].fail() || ifs_color[ 1 ].fail() || \
 		ifs_depth[ 0 ].fail() || ifs_depth[ 1 ].fail() )
 		return;*/
-
+	int const kinect_num = 1;//ifs_depth.size();
 	bool input_come = false;
 	std::string input;
 
@@ -319,7 +319,7 @@ void draw()
 
 	try {
 
-		std::vector< graph > graph( ifs_depth.size() );
+		std::vector< graph > graph( kinect_num );//( ifs_depth.size() );
 		::cvNamedWindow( "test",  CV_WINDOW_KEEPRATIO );
 
 		bool continue_flag = true;
@@ -370,6 +370,7 @@ void draw()
 			for( int i = 0; i < 4; ++i )
 			{
 				cloud_ptr[ i ] = pcl::PointCloud< pcl::PointXYZRGB >::Ptr( new pcl::PointCloud< pcl::PointXYZRGB > );
+				cloud_ptr[ i ]->clear();
 			}
 
 			if( ! pause && next )

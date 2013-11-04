@@ -210,38 +210,38 @@ public:
 
 		IplImage * mask = cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_8U, 1 );
 
-		for( int y = 0; y < color->height; ++y )
-		{
-				for( int x = 0; x < color->width; ++x )
-				{
-					auto const d = ( UINT16 )( ( ( ( UINT16 * )( depth->imageData +\
-						depth->widthStep * y ) )[ x ] ) );
+		//for( int y = 0; y < color->height; ++y )
+		//{
+		//		for( int x = 0; x < color->width; ++x )
+		//		{
+		//			auto const d = ( UINT16 )( ( ( ( UINT16 * )( depth->imageData +\
+		//				depth->widthStep * y ) )[ x ] ) );
 
-					auto const back_d = ( UINT16 )( ( ( ( UINT16 * )( depth_back->imageData +\
-						depth_back->widthStep * y ) )[ x ] ) );
+		//			auto const back_d = ( UINT16 )( ( ( ( UINT16 * )( depth_back->imageData +\
+		//				depth_back->widthStep * y ) )[ x ] ) );
 
-					auto const threshold = 100;
-					if( abs( d - back_d ) < threshold )
-					{
-						( mask->imageData +\
-						mask->widthStep * y )[ x ]= 0;
-						//îwåiÇ∆àÍèè
-						continue;
-					}
-					else
-					{
-						( mask->imageData +\
-						mask->widthStep * y )[ x ] = 100;
-					}
-				}
-		}
+		//			auto const threshold = 100;
+		//			if( abs( d - back_d ) < threshold )
+		//			{
+		//				( mask->imageData +\
+		//				mask->widthStep * y )[ x ]= 0;
+		//				//îwåiÇ∆àÍèè
+		//				continue;
+		//			}
+		//			else
+		//			{
+		//				( mask->imageData +\
+		//				mask->widthStep * y )[ x ] = 100;
+		//			}
+		//		}
+		//}
 
-		//é˚èkÇ∆ñcí£
-		cvErode( mask, mask, NULL, 2 );  //é˚èkâÒêî2
+		////é˚èkÇ∆ñcí£
+		//cvErode( mask, mask, NULL, 2 );  //é˚èkâÒêî2
 
-		cvSmooth( mask, mask, CV_MEDIAN,  13, 13, 0, 0 );
+		//cvSmooth( mask, mask, CV_MEDIAN,  13, 13, 0, 0 );
 
-		cvDilate( mask, mask, NULL, 3 );  //ñcí£âÒêî3
+		//cvDilate( mask, mask, NULL, 3 );  //ñcí£âÒêî3
 
 		for( int y = 0; y < color->height; ++y )
 		{
@@ -254,21 +254,21 @@ public:
 						long color_x = x, color_y = y;
 						//íçà” : KinectÇê⁄ë±ÇµÇƒÇ¢Ç»ÇØÇÍÇŒìÆÇ©Ç»Ç¢
 
-						auto const d = ( UINT16 )( ( ( ( UINT16 * )( depth->imageData +\
-							depth->widthStep * y ) )[ x ] ) >> 3 );
-						
-						auto const back_d = ( UINT16 )( ( ( ( UINT16 * )( depth_back->imageData +\
-							depth_back->widthStep * y ) )[ x ] ) >> 3  );
+						//auto const d = ( UINT16 )( ( ( ( UINT16 * )( depth->imageData +\
+						//	depth->widthStep * y ) )[ x ] ) >> 3 );
+						//
+						//auto const back_d = ( UINT16 )( ( ( ( UINT16 * )( depth_back->imageData +\
+						//	depth_back->widthStep * y ) )[ x ] ) >> 3  );
 
-						auto const mask_d = ( ( ( ( mask->imageData +\
-							mask->widthStep * y ) )[ x ] ) );
+						//auto const mask_d = ( ( ( ( mask->imageData +\
+						//	mask->widthStep * y ) )[ x ] ) );
 
-						auto const threshold = 100;
-						if( abs( d - back_d ) < threshold || mask_d == 0 )
-						{
-							//îwåiÇ∆àÍèè
-							continue;
-						}
+						//auto const threshold = 100;
+						//if( abs( d - back_d ) < threshold || mask_d == 0 )
+						//{
+						//	//îwåiÇ∆àÍèè
+						//	continue;
+						//}
 
 						HRESULT result = NuiImageGetColorPixelCoordinatesFromDepthPixelAtResolution( 
 							NUI_IMAGE_RESOLUTION_640x480, NUI_IMAGE_RESOLUTION_640x480, NULL, x, y, ( ( ( ( UINT16 * )( depth->imageData +\
@@ -534,17 +534,18 @@ public:
 		const double pi = 3.141592653;/*
 		pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud_ptr
 			( new pcl::PointCloud< pcl::PointXYZRGB > );*/
-		
+		static int debugcounter = 0;
 		double py = 0;
+		debugcounter++;
 		for( int y = 0; y < color->height; ++y )
 		{
-			if( ! light || light && y  == 0 )
+			if( ( y % 2 ) ) //! light || light && y  == 0 )
 			{
 				for( int x = 0; x < color->width; ++x )
 				{
-					if( ! light || light && x == 0 )
+					if( x % 2 ) //! light || light && x == 0 )
 					{
-						long color_x = x, color_y = y;
+						long color_x = 0, color_y = 0;
 						//íçà” : KinectÇê⁄ë±ÇµÇƒÇ¢Ç»ÇØÇÍÇŒìÆÇ©Ç»Ç¢
 						HRESULT result = NuiImageGetColorPixelCoordinatesFromDepthPixelAtResolution( 
 							NUI_IMAGE_RESOLUTION_640x480, NUI_IMAGE_RESOLUTION_640x480, NULL, x, y, ( ( ( ( UINT16 * )( depth->imageData +\
@@ -555,20 +556,20 @@ public:
 							//âÊñ ì‡ÇÃèÍçá
 
 							auto const real_point = NuiTransformDepthImageToSkeleton( x, y, ( ( ( ( UINT16 * )( depth->imageData +\
-								depth->widthStep * color_y ) )[ color_x ] )  ), NUI_IMAGE_RESOLUTION_640x480 );
+								depth->widthStep * y ) )[ x ] )  ), NUI_IMAGE_RESOLUTION_640x480 );
 							pcl::PointXYZRGB basic_point;
 
 							auto * pixel_ptr = & color->imageData[ color_x * 4 + color->width * color_y * 4 ];
 							basic_point.x = real_point.x;
 							basic_point.y = real_point.y;
-							basic_point.z = real_point.z - 1.35;
+							basic_point.z = -real_point.z;
 							
 
 							//basic_point.y = ( 1.0 + y * y * 0.000003 ); 
-
-							basic_point.r = pixel_ptr[ 2 ];
-							basic_point.g = pixel_ptr[ 1 ];
-							basic_point.b = pixel_ptr[ 0 ];
+							
+							basic_point.r = 0 ? pixel_ptr[ 2 ] : 100;
+							basic_point.g = 0 ? pixel_ptr[ 1 ] : 100;
+							basic_point.b = 0 ? pixel_ptr[ 0 ] : 150;
 							//110.125
 
 							cloud_ptr->points.push_back( basic_point );
@@ -633,9 +634,6 @@ public:
 			( new pcl::PointCloud< pcl::PointXYZRGB > );*/
 		
 		double py = 0;
-		
-		
-
 
 		IplImage * mask = cvCreateImage( cvSize( depth_back->width, depth_back->height ), IPL_DEPTH_8U, 1 );
 
@@ -649,7 +647,7 @@ public:
 					auto const back_d = ( UINT16 )( ( ( ( UINT16 * )( depth_back->imageData +\
 						depth_back->widthStep * y ) )[ x ] ) );
 
-					auto const threshold = 100;
+					auto const threshold = 20;
 					if( abs( d - back_d ) < threshold )
 					{
 						( mask->imageData +\
@@ -668,7 +666,7 @@ public:
 		//é˚èkÇ∆ñcí£
 		cvErode( mask, mask, NULL, 2 );  //é˚èkâÒêî2
 
-		cvSmooth( mask, mask, CV_MEDIAN,  13, 13, 0, 0 );
+		cvSmooth( mask, mask, CV_MEDIAN,  5, 5, 0, 0 );
 
 		cvDilate( mask, mask, NULL, 3 );  //ñcí£âÒêî3
 
@@ -693,7 +691,7 @@ public:
 						auto const mask_d = ( ( ( ( mask->imageData +\
 							mask->widthStep * y ) )[ x ] ) );
 
-						auto const threshold = 100;
+						auto const threshold = 20;
 						if( abs( d - back_d ) < threshold || mask_d == 0 )
 						{
 							//îwåiÇ∆àÍèè
@@ -709,7 +707,7 @@ public:
 							//âÊñ ì‡ÇÃèÍçá
 
 							auto const real_point = NuiTransformDepthImageToSkeleton( x, y, ( ( ( ( UINT16 * )( depth->imageData +\
-								depth->widthStep * color_y ) )[ color_x ] )  ), NUI_IMAGE_RESOLUTION_640x480 );
+								depth->widthStep * y ) )[ x ] )  ), NUI_IMAGE_RESOLUTION_640x480 );
 							pcl::PointXYZRGB basic_point;
 
 							auto * pixel_ptr = & color->imageData[ color_x * 4 + color->width * color_y * 4 ];
@@ -722,7 +720,7 @@ public:
 
 							basic_point.r = 120;//pixel_ptr[ 2 ];
 							basic_point.g = 120;//pixel_ptr[ 1 ];
-							basic_point.b = 130;//pixel_ptr[ 0 ];
+							basic_point.b = 140;//pixel_ptr[ 0 ];
 							//110.125
 							cloud_ptr->points.push_back( basic_point );
 						}
@@ -773,6 +771,8 @@ public:
 			matrix *= get_rotate_matrix( itt->x_theta_, itt->y_theta_, itt->z_theta_ );
 			matrix *= get_move_matrix( itt->x_, itt->y_, itt->z_ );
 		//	pcl::transformPointCloud( * cloud_ptr, * cloud_ptr, matrix );
+
+			std::cout << matrix << std::endl;
 		}
 
 		matrix *= get_rotate_matrix( g_param.x_theta_, g_param.y_theta_, g_param.z_theta_ );

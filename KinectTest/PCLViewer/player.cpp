@@ -194,14 +194,14 @@ std::vector< std::string > get_recorded_filelist( std::vector< std::string > con
 void create_back_image( ifstream & back_depth, IplImage * result )
 {
 	int const FRAME_NUM = 300;
-	auto tmp_image = ::cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_16U, 1  );
+	auto tmp_image = ::cvCreateImage( cvSize( result->width, result->height ), IPL_DEPTH_16U, 1  );
 	
-	back_depth.read( result->imageData ,640 * 480 * 2 );
+	back_depth.read( result->imageData ,result->widthStep * result->height );
 
 
 	for( int i = 0; i < FRAME_NUM; ++i )
 	{
-		back_depth.read( tmp_image->imageData ,640 * 480 * 2 );
+		back_depth.read( tmp_image->imageData , result->widthStep * result->height );
 
 		for( int y = 0; y < result->height; ++y )
 		{
@@ -212,8 +212,6 @@ void create_back_image( ifstream & back_depth, IplImage * result )
 				std::max( ( ( UINT16 * )( result->imageData +\
 				result->widthStep * y ) )[ x ], ( ( UINT16 * )( tmp_image->imageData +\
 				tmp_image->widthStep * y ) )[ x ] );
-				
-				
 			}
 		}
 	}
@@ -258,22 +256,26 @@ std::vector< rect > get_rect_to_draw( std::string const & filename )
 			result[ i ].y_ = y;
 
 		}
+		return result;
 	}
 	return std::vector< rect >();	
 }
 
-
-
-void draw()
+//新しいバージョン
+//setting_XXX.txtを使う
+void draw_new()
 {
 	::cvNamedWindow( "show2d",  CV_WINDOW_KEEPRATIO );
+	::cvNamedWindow( "show2dc",  CV_WINDOW_KEEPRATIO );
 
 
 	double const pi = 3.141592653;
 
 	using namespace std;
-	int const kinect_count = 1;
 	bool const use_mouse = true;
+
+	std::ifstream setting_file("seting_XXXXXX.txt");
+
 	vector< ifstream >  ifs_depth( 4 );//( kinect_count );
 	vector< ifstream >  ifs_color( 4 );//( kinect_count );
 	vector< ifstream >  ifs_depth_back( 4 );//( kinect_count );
@@ -285,37 +287,65 @@ void draw()
 	std::cout << "program started" << std::endl;
 	//baby __20130523T104214
 	//back            122852
+	std::string date_time;
+
+	//入力ファイルの日付取得
+	std::getline( setting_file, date_time );
+
+	int kinect_count = 0;
+	//Kinectの台数を取得
+	setting_file >> kinect_count;
 
 
-	ifs_depth_back[ 0 ].open( "D:/rec2/depth__20130523T122852_0.txt", ios::binary  );
-	ifs_depth_back[ 1 ].open( "D:/rec2/depth__20130523T122852_1.txt", ios::binary  );
-	ifs_depth_back[ 2 ].open( "D:/rec2/depth__20130523T122852_2.txt", ios::binary  );
-	ifs_depth_back[ 3 ].open( "D:/rec2/depth__20130523T122852_3.txt", ios::binary  );
+	std::string bsub = "depth_XXXXX";
+	std::string inputfile = "depth_" + date_time;
+	std::string inputfilecolor = "color_" + date_time;
+	auto const list = get_rect_to_draw( "E:/rec_kurume/area20131002T142501.txt" );//area20131002T151127.txt" );
+
+
+	ifs_depth_back[ 0 ].open( "E:/rec_kurume/" + bsub + "_0.txt", ios::binary  );
+	/*ifs_depth_back[ 1 ].open( "E:/rec_kurume/" + bsub + "_1.txt", ios::binary  );
+	ifs_depth_back[ 2 ].open( "E:/rec_kurume/" + bsub + "_2.txt", ios::binary  );
+	ifs_depth_back[ 3 ].open( "E:/rec_kurume/" + bsub + "_3.txt", ios::binary  );
+	*/
+	ifs_color[ 0 ].open( "E:/rec_kurume/" + inputfilecolor + "_0.txt", ios::binary  );
+	/*ifs_color[ 1 ].open( "E:/rec_kurume/" + inputfilecolor + "_1.txt", ios::binary  );
+	ifs_color[ 2 ].open( "E:/rec_kurume/" + inputfilecolor + "_2.txt", ios::binary  );
+	ifs_color[ 3 ].open( "E:/rec_kurume/" + inputfilecolor + "_3.txt", ios::binary  );
+	*/ifs_depth[ 0 ].open( "E:/rec_kurume/" + inputfile + "_0.txt", ios::binary  );
+	/*ifs_depth[ 1 ].open( "E:/rec_kurume/" + inputfile + "_1.txt", ios::binary  );
+	ifs_depth[ 2 ].open( "E:/rec_kurume/" + inputfile + "_2.txt", ios::binary  );
+	ifs_depth[ 3 ].open( "E:/rec_kurume/" + inputfile + "_3.txt", ios::binary  );
 	
-	ifs_color[ 0 ].open( "C:/rec/color__20130523T104214_0.txt", ios::binary  );
-	ifs_color[ 1 ].open( "C:/rec/color__20130523T104214_1.txt", ios::binary  );
-	ifs_color[ 2 ].open( "C:/rec/color__20130523T104214_2.txt", ios::binary  );
-	ifs_color[ 3 ].open( "C:/rec/color__20130523T104214_3.txt", ios::binary  );
-	ifs_depth[ 0 ].open( "D:/rec2/depth__20130523T104214_0.txt", ios::binary  );
-	ifs_depth[ 1 ].open( "D:/rec2/depth__20130523T104214_1.txt", ios::binary  );
-	ifs_depth[ 2 ].open( "D:/rec2/depth__20130523T104214_2.txt", ios::binary  );
-	ifs_depth[ 3 ].open( "D:/rec2/depth__20130523T104214_3.txt", ios::binary  );
-	
-
+*/
 	IplImage * depth_back[ 4 ];
+
+
+
+	if( list.size() != static_cast< std::size_t >( kinect_count ) )
+	{
+		std::cout << "Kinectの数と設定ファイルに書かれたKinectの数が不一致です．" << std::endl;
+		return;
+	}
+
 
 	//差分用画像領域を確保
 	//差分作成用画像を生成
-	for( int i = 0; i < 4; ++i )
+	for( int i = 0; i < kinect_count; ++i )
 	{
-		depth_back[ i ] = cvCreateImage( cvSize( 640, 480 ),  IPL_DEPTH_16U, 1 );
+		//depth_back[ i ] = cvCreateImage( cvSize( list[i].width_ - list[i].x_, list[i].height_ - list[i].y_ ),  IPL_DEPTH_16U, 1 );
 
-		create_back_image( ifs_depth_back[ i ], depth_back[ i ] );
+		//create_back_image( ifs_depth_back[ i ], depth_back[ i ] );
 	}
 
-	if( ifs_color[ 0 ].fail() || ifs_color[ 1 ].fail() || \
+	/*if( ifs_color[ 0 ].fail() || ifs_color[ 1 ].fail() || \
 		ifs_depth[ 0 ].fail() || ifs_depth[ 1 ].fail() )
-		return;
+		return;*/
+
+	if( ifs_depth[ 0 ].fail() || ifs_color[ 0 ].fail() )
+	{
+		std::wcout << "謎" << std::endl;
+	}
 
 	bool input_come = false;
 	std::string input;
@@ -324,7 +354,7 @@ void draw()
 
 	try {
 
-		std::vector< graph > graph( ifs_depth.size() );
+		std::vector< graph > graph( kinect_count );
 
 		bool continue_flag = true;
 		int count = 0;
@@ -332,6 +362,14 @@ void draw()
 		long now_angle = 0;
 
 		init( graph );
+
+		for( int i = 0; i < kinect_count; ++i )
+		{
+			graph[i].color_.image_ = cvCreateImage( cvSize( list[i].width_ - list[i].x_,
+				list[i].height_ - list[i].y_ ), IPL_DEPTH_8U, 4 );
+			graph[i].depth_.image_ = cvCreateImage( cvSize( list[i].width_ - list[i].x_,
+				list[i].height_ - list[i].y_ ), IPL_DEPTH_16U, 1 );
+		}
 
 		bool pause = false;
 		bool quick = false;
@@ -344,10 +382,9 @@ void draw()
 		bool simple = true;
 		bool flag_2d = false;
 
+		std::array< std::vector< gp::global_parameter >, 4 > global_param_v;
 		std::array< gp::global_parameter, 4 > global_param;
-
-		IplImage * mod_color = cvCreateImage( cvSize( 640, 480 ), IPL_DEPTH_8U, 4  );
-
+		
 		while ( ( graph.size() > 0 ) && continue_flag )
 		{
 			pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud_ptr[ 4 ];
@@ -363,10 +400,15 @@ void draw()
 			{
 				for( size_t i = 0; i < graph.size(); ++i )
 				{
-					ifs_depth[ i ].read( graph[ i ].depth_.image_->imageData, 640 * 480 * 2 ); 
+					ifs_depth[ i ].read( graph[ i ].depth_.image_->imageData, graph[ i ].depth_.image_->widthStep * graph[ i ].depth_.image_->height ); 
 
 					//if( count % 2 == 0 )
-						ifs_color[ i ].read( graph[ i ].color_.image_->imageData, 640 * 480 * 4 ); 
+					ifs_color[ i ].read( graph[ i ].color_.image_->imageData, graph[ i ].color_.image_->width * graph[ i ].color_.image_->height * 4 ); 
+
+
+					cvShowImage( "show2d", graph[ 0 ].depth_.image_ );
+					cvShowImage( "show2dc", graph[ 0 ].color_.image_ );
+						
 
 					if( ifs_depth[ i ].eof() )
 							continue_flag = false;
@@ -379,20 +421,29 @@ void draw()
 							pcl_mn.init( pcl_mn.convert_RGB_and_depth_to_cloud( \
 								graph[ i ].color_.image_,
 								graph[ i ].depth_.image_ ), "hoge" );
+							pcl_mn.cloud_task( graph[ i ].color_.image_,
+								graph[ i ].depth_.image_, global_param[ i ], cloud_ptr[ i ], count % 2,
+								global_param_v[i]);//, depth_back[ i ] );
+							/*
 							pcl_mn.rotate_and_move_and_convert_RGB_and_depth_to_cloud_with_sub( \
 								graph[ i ].color_.image_,
-								graph[ i ].depth_.image_, global_param[ i ], cloud_ptr[ i ], simple, depth_back[ i ] );
+								graph[ i ].depth_.image_, global_param[ i ], cloud_ptr[ i ], simple, depth_back[ i ] );*/
 						}
 						else
 						{
 
 							/*pcl_mn.rotate_and_move_and_convert_RGB_and_depth_to_cloud( \
 								graph[ i ].color_.image_,
-								graph[ i ].depth_.image_, 0, 0, 0, cloud_ptr );
-						*/	
-							pcl_mn.rotate_and_move_and_convert_RGB_and_depth_to_cloud_with_sub( \
+								graph[ i ].depth_.image_, 0, 0, 0, cloud_ptr );*/
+							
+							pcl_mn.cloud_task
+								( graph[ i ].color_.image_,
+								graph[ i ].depth_.image_, global_param[ i ], cloud_ptr[ i ], count % 2,
+								global_param_v[i]);//, depth_back[ i ] );
+							
+						/*	pcl_mn.rotate_and_move_and_convert_RGB_and_depth_to_cloud_with_sub( \
 								graph[ i ].color_.image_,
-								graph[ i ].depth_.image_, global_param[ i ], cloud_ptr[ i ], simple, depth_back[ i ], count % 2 );
+								graph[ i ].depth_.image_, global_param[ i ], cloud_ptr[ i ], simple, depth_back[ i ], count % 2 );*/
 							//icpしない場合は簡易描画
 						}
 					}
@@ -469,87 +520,503 @@ void draw()
 			icp = false;
 			simple = true;
 
-			if( input_come )
+			bool input_end = true;
+
+			while( 1 )
 			{
-				if ( input == "end" ) {
-					continue_flag = false;
-					pcl_mn.end_mes_ = true;
-					thread.join();
-				}
-				else if( input == "p" )
+				if( input_come )
 				{
-					pause = ! pause;
-				}
-				else if( input == "n" )
-				{
-					next = true;
-					//simple = false;
-					quick = ! quick;
-				}
-				else if( input == "cmd" )
-				{
-					next = true;
-					//操作
-					//画像番号0-3
-					//move・・・並行移動、rotate・・・回転
-					//xyz
-					//座標数 or 角度(radian の pi 無し)
-					int num = 0;
-					if( !( cin >> num ) )
+					input_end = false;//入力終了コマンドが来るまではoff
+
+					if( input == "ie" )
 					{
-						input_come = false;
-						continue;
+						input_end = true;
+						//入力終了
 					}
+					if ( input == "end" ) {
+						continue_flag = false;
+						pcl_mn.end_mes_ = true;
+						input_end = true;//入力終了
+						thread.join();
+					}
+					else if( input == "p" )
+					{
+						pause = ! pause;
+					}
+					else if( input == "n" )
+					{
+						next = true;
+						//simple = false;
+						quick = ! quick;
+					}
+					else if( input == "cmd" )
+					{
+						next = true;
+
+
+						//操作
+						//画像番号0-3
+						//move・・・並行移動、rotate・・・回転
+						//xyz
+						//座標数 or 角度(radian の pi 無し)
+						int num = 0;
+						if( !( cin >> num ) )
+						{
+							input_come = false;
+							continue;
+						}
+
+						num = std::max( 0, std::min( 3, num ) );
+
+						std::string operate;
+						if( !( cin >> operate ) )
+						{
+							input_come = false;
+							continue;
+						}
+						std::string axis;
+						cin >> axis;
+
+						double deg = 0.0;
+
+						if( !( cin >> deg ) )
+						{
+							input_come = false;
+							continue;
+						}
+						if( operate == "move" )
+						{
+							if( axis == "x" )
+								global_param[ num ].x_ += deg;
+							if( axis == "y" )
+								global_param[ num ].y_ += deg;
+							if( axis == "z" )
+								global_param[ num ].z_ += deg;	
+
+							global_param_v[ num ].push_back( global_param[ num ] );
+							global_param[ num ] = gp::global_parameter();
+
+							{
+								cvShowImage( "show2d", graph[ num ].depth_.image_ );
+								cvShowImage( "show2dc", graph[ num ].color_.image_ );
+							}
+
+						}
+						if( operate == "rotate" )
+						{
+							if( axis == "x" )
+								global_param[ num ].x_theta_ += deg * pi;
+							if( axis == "y" )
+								global_param[ num ].y_theta_ += deg * pi;
+							if( axis == "z" )
+								global_param[ num ].z_theta_ += deg * pi;	
+
+							global_param_v[ num ].push_back( global_param[ num ] );
+							global_param[ num ] = gp::global_parameter();
+						}
+						if( operate == "icp" )
+						{
+							simple = false;
+							icp = true;
+						}
+						if( operate == "2d" )
+						{
+							flag_2d = true;
+						}
+						if( operate == "cut" )
+						{
+
+						}
+					}
+					input_come = false;
+					Sleep( 10 );
+					cout << "nf" << endl;
+				}
+				else
+				{
 					
-					num = std::max( 0, std::min( 3, num ) );
-					
-					std::string operate;
-					if( !( cin >> operate ) )
+					if( input_end == true )
 					{
-						input_come = false;
-						continue;
-					}
-					std::string axis;
-					cin >> axis;
-
-					double deg = 0.0;
-
-					if( !( cin >> deg ) )
-					{
-						input_come = false;
-						continue;
-					}
-					if( operate == "move" )
-					{
-						if( axis == "x" )
-							global_param[ num ].x_ += deg;
-						if( axis == "y" )
-							global_param[ num ].y_ += deg;
-						if( axis == "z" )
-							global_param[ num ].z_ += deg;	
-					}
-					if( operate == "rotate" )
-					{
-						if( axis == "x" )
-							global_param[ num ].x_theta_ += deg * pi;
-						if( axis == "y" )
-							global_param[ num ].y_theta_ += deg * pi;
-						if( axis == "z" )
-							global_param[ num ].z_theta_ += deg * pi;	
-					}
-					if( operate == "icp" )
-					{
-						simple = false;
-						icp = true;
-					}
-					if( operate == "2d" )
-					{
-						flag_2d = true;
+						break;
 					}
 
 				}
-				input_come = false;
+			}
+		}
+		
+	}
+	catch ( std::exception & ex ) {
+		std::cout << ex.what() << std::endl;
+	}
+	cvDestroyAllWindows();
+}
 
+void draw()
+{
+	::cvNamedWindow( "show2d",  CV_WINDOW_KEEPRATIO );
+	::cvNamedWindow( "show2dc",  CV_WINDOW_KEEPRATIO );
+
+
+	double const pi = 3.141592653;
+
+	using namespace std;
+	bool const use_mouse = true;
+	vector< ifstream >  ifs_depth( 4 );//( kinect_count );
+	vector< ifstream >  ifs_color( 4 );//( kinect_count );
+	vector< ifstream >  ifs_depth_back( 4 );//( kinect_count );
+	vector< ifstream >  ifs_color_back( 4 );//( kinect_count );
+	//std::ifstream ifs_timestamp( "debug_log.txt");
+	
+	auto const filelist = get_recorded_filelist( get_filelist_from_current_dir() );
+
+	std::cout << "program started" << std::endl;
+	//baby __20130523T104214
+	//back            122852
+	int const kinect_count = 1;
+	std::string bsub = "depth_20131002T151844";
+	std::string inputfile = "depth_20131002T143235";
+	std::string inputfilecolor = "color_20131002T143235";
+	auto const list = get_rect_to_draw( "E:/rec_kurume/area20131002T142501.txt" );//area20131002T151127.txt" );
+
+
+	ifs_depth_back[ 0 ].open( "E:/rec_kurume/" + bsub + "_0.txt", ios::binary  );
+	/*ifs_depth_back[ 1 ].open( "E:/rec_kurume/" + bsub + "_1.txt", ios::binary  );
+	ifs_depth_back[ 2 ].open( "E:/rec_kurume/" + bsub + "_2.txt", ios::binary  );
+	ifs_depth_back[ 3 ].open( "E:/rec_kurume/" + bsub + "_3.txt", ios::binary  );
+	*/
+	ifs_color[ 0 ].open( "E:/rec_kurume/" + inputfilecolor + "_0.txt", ios::binary  );
+	/*ifs_color[ 1 ].open( "E:/rec_kurume/" + inputfilecolor + "_1.txt", ios::binary  );
+	ifs_color[ 2 ].open( "E:/rec_kurume/" + inputfilecolor + "_2.txt", ios::binary  );
+	ifs_color[ 3 ].open( "E:/rec_kurume/" + inputfilecolor + "_3.txt", ios::binary  );
+	*/ifs_depth[ 0 ].open( "E:/rec_kurume/" + inputfile + "_0.txt", ios::binary  );
+	/*ifs_depth[ 1 ].open( "E:/rec_kurume/" + inputfile + "_1.txt", ios::binary  );
+	ifs_depth[ 2 ].open( "E:/rec_kurume/" + inputfile + "_2.txt", ios::binary  );
+	ifs_depth[ 3 ].open( "E:/rec_kurume/" + inputfile + "_3.txt", ios::binary  );
+	
+*/
+	IplImage * depth_back[ 4 ];
+
+
+
+	if( list.size() != static_cast< std::size_t >( kinect_count ) )
+	{
+		std::cout << "Kinectの数と設定ファイルに書かれたKinectの数が不一致です．" << std::endl;
+		return;
+	}
+
+
+	//差分用画像領域を確保
+	//差分作成用画像を生成
+	for( int i = 0; i < kinect_count; ++i )
+	{
+		//depth_back[ i ] = cvCreateImage( cvSize( list[i].width_ - list[i].x_, list[i].height_ - list[i].y_ ),  IPL_DEPTH_16U, 1 );
+
+		//create_back_image( ifs_depth_back[ i ], depth_back[ i ] );
+	}
+
+	/*if( ifs_color[ 0 ].fail() || ifs_color[ 1 ].fail() || \
+		ifs_depth[ 0 ].fail() || ifs_depth[ 1 ].fail() )
+		return;*/
+
+	if( ifs_depth[ 0 ].fail() || ifs_color[ 0 ].fail() )
+	{
+		std::wcout << "謎" << std::endl;
+	}
+
+	bool input_come = false;
+	std::string input;
+
+	boost::thread thread( wait_input, std::ref( input_come ), std::ref( input ) );
+
+	try {
+
+		std::vector< graph > graph( kinect_count );
+
+		bool continue_flag = true;
+		int count = 0;
+		
+		long now_angle = 0;
+
+		init( graph );
+
+		for( int i = 0; i < kinect_count; ++i )
+		{
+			graph[i].color_.image_ = cvCreateImage( cvSize( list[i].width_ - list[i].x_,
+				list[i].height_ - list[i].y_ ), IPL_DEPTH_8U, 4 );
+			graph[i].depth_.image_ = cvCreateImage( cvSize( list[i].width_ - list[i].x_,
+				list[i].height_ - list[i].y_ ), IPL_DEPTH_16U, 1 );
+		}
+
+		bool pause = false;
+		bool quick = false;
+
+		pcl_manager pcl_mn;
+
+		bool first_time = true;
+		bool next = true;
+		bool icp = false;
+		bool simple = true;
+		bool flag_2d = false;
+
+		std::array< std::vector< gp::global_parameter >, 4 > global_param_v;
+		std::array< gp::global_parameter, 4 > global_param;
+		
+		while ( ( graph.size() > 0 ) && continue_flag )
+		{
+			pcl::PointCloud< pcl::PointXYZRGB >::Ptr cloud_ptr[ 4 ];
+			pcl::PointCloud< pcl::PointXYZRGB >::Ptr final_cloud( new pcl::PointCloud< pcl::PointXYZRGB > );
+
+			for( int i = 0; i < 4; ++i )
+			{
+				cloud_ptr[ i ] = pcl::PointCloud< pcl::PointXYZRGB >::Ptr( new pcl::PointCloud< pcl::PointXYZRGB > );
+			}
+
+			
+			if( ! pause && next )
+			{
+				for( size_t i = 0; i < graph.size(); ++i )
+				{
+					ifs_depth[ i ].read( graph[ i ].depth_.image_->imageData, graph[ i ].depth_.image_->widthStep * graph[ i ].depth_.image_->height ); 
+
+					//if( count % 2 == 0 )
+					ifs_color[ i ].read( graph[ i ].color_.image_->imageData, graph[ i ].color_.image_->width * graph[ i ].color_.image_->height * 4 ); 
+
+
+					cvShowImage( "show2d", graph[ 0 ].depth_.image_ );
+					cvShowImage( "show2dc", graph[ 0 ].color_.image_ );
+						
+
+					if( ifs_depth[ i ].eof() )
+							continue_flag = false;
+
+					if( 1 )//! quick )
+					{
+						if( first_time )
+						{
+							first_time = false;
+							pcl_mn.init( pcl_mn.convert_RGB_and_depth_to_cloud( \
+								graph[ i ].color_.image_,
+								graph[ i ].depth_.image_ ), "hoge" );
+							pcl_mn.cloud_task( graph[ i ].color_.image_,
+								graph[ i ].depth_.image_, global_param[ i ], cloud_ptr[ i ], count % 2,
+								global_param_v[i]);//, depth_back[ i ] );
+							/*
+							pcl_mn.rotate_and_move_and_convert_RGB_and_depth_to_cloud_with_sub( \
+								graph[ i ].color_.image_,
+								graph[ i ].depth_.image_, global_param[ i ], cloud_ptr[ i ], simple, depth_back[ i ] );*/
+						}
+						else
+						{
+
+							/*pcl_mn.rotate_and_move_and_convert_RGB_and_depth_to_cloud( \
+								graph[ i ].color_.image_,
+								graph[ i ].depth_.image_, 0, 0, 0, cloud_ptr );*/
+							
+							pcl_mn.cloud_task
+								( graph[ i ].color_.image_,
+								graph[ i ].depth_.image_, global_param[ i ], cloud_ptr[ i ], count % 2,
+								global_param_v[i]);//, depth_back[ i ] );
+							
+						/*	pcl_mn.rotate_and_move_and_convert_RGB_and_depth_to_cloud_with_sub( \
+								graph[ i ].color_.image_,
+								graph[ i ].depth_.image_, global_param[ i ], cloud_ptr[ i ], simple, depth_back[ i ], count % 2 );*/
+							//icpしない場合は簡易描画
+						}
+					}
+				}
+				
+				cout << "frame : " << ++count << endl;
+				//保留
+				//pcl_mn.iterative_closest_point( cloud_ptr[ 0 ], cloud_ptr[ 1 ], final_cloud );
+				pcl_mn.locked_ = true;
+				
+				if( icp && count >= 1 )
+				{
+					final_cloud->clear();
+					auto const transform = pcl_mn.iterative_closest_point( cloud_ptr[ 0 ],
+						cloud_ptr[ 1 ], final_cloud );
+
+					pcl::transformPointCloud( * cloud_ptr[ 1 ], * cloud_ptr[ 1 ],
+						transform );
+
+					pcl::PointCloud< pcl::PointXYZRGB >::Ptr tmp_cloud( new pcl::PointCloud< pcl::PointXYZRGB > );
+
+					* tmp_cloud = * cloud_ptr[ 0 ] + * cloud_ptr[ 1 ];
+					final_cloud->clear();
+					auto const transform2 = pcl_mn.iterative_closest_point( tmp_cloud, cloud_ptr[ 2 ], final_cloud );
+
+					pcl::transformPointCloud( * cloud_ptr[ 2 ], * cloud_ptr[ 2 ],
+						transform2 );
+					
+					tmp_cloud->clear();
+					* tmp_cloud = * cloud_ptr[ 0 ] + * cloud_ptr[ 1 ];
+					* tmp_cloud += * cloud_ptr[ 2 ];
+
+					auto const transform3 = pcl_mn.iterative_closest_point( tmp_cloud, cloud_ptr[ 3 ], final_cloud );
+
+					pcl::transformPointCloud( * cloud_ptr[ 3 ], * cloud_ptr[ 3 ],
+						transform3 );
+					
+					final_cloud->clear();
+					for( int i = 0; i < 4; ++i )
+					{
+						* final_cloud += * cloud_ptr[ i ];
+					}
+				}
+				else
+				{
+					* final_cloud = * cloud_ptr[ 0 ] + * cloud_ptr[ 1 ];
+					* final_cloud += * cloud_ptr[ 2 ];
+					* final_cloud += * cloud_ptr[ 3 ];
+
+
+					if( flag_2d )
+					{
+						pcl_mn.show_point_cloud_to_2d( "show2d", final_cloud );
+						flag_2d = false;
+
+					}
+				
+				}
+				pcl_mn.update( final_cloud, "hoge" );
+				pcl_mn.spin_once();
+				for( int i = 0; i < 2; ++i )
+					cloud_ptr[ i ]->clear();
+				final_cloud->clear();
+				pcl_mn.locked_ = false;
+				cout << "nf" << endl;
+			}
+
+			//openCV用
+			cvWaitKey( 1 );
+			
+			pcl_mn.spin_once();
+			if( ! quick )
+				next = false;
+			icp = false;
+			simple = true;
+
+			bool input_end = true;
+
+			while( 1 )
+			{
+				if( input_come )
+				{
+					input_end = false;//入力終了コマンドが来るまではoff
+
+					if( input == "ie" )
+					{
+						input_end = true;
+						//入力終了
+					}
+					if ( input == "end" ) {
+						continue_flag = false;
+						pcl_mn.end_mes_ = true;
+						input_end = true;//入力終了
+						thread.join();
+					}
+					else if( input == "p" )
+					{
+						pause = ! pause;
+					}
+					else if( input == "n" )
+					{
+						next = true;
+						//simple = false;
+						quick = ! quick;
+					}
+					else if( input == "cmd" )
+					{
+						next = true;
+
+
+						//操作
+						//画像番号0-3
+						//move・・・並行移動、rotate・・・回転
+						//xyz
+						//座標数 or 角度(radian の pi 無し)
+						int num = 0;
+						if( !( cin >> num ) )
+						{
+							input_come = false;
+							continue;
+						}
+
+						num = std::max( 0, std::min( 3, num ) );
+
+						std::string operate;
+						if( !( cin >> operate ) )
+						{
+							input_come = false;
+							continue;
+						}
+						std::string axis;
+						cin >> axis;
+
+						double deg = 0.0;
+
+						if( !( cin >> deg ) )
+						{
+							input_come = false;
+							continue;
+						}
+						if( operate == "move" )
+						{
+							if( axis == "x" )
+								global_param[ num ].x_ += deg;
+							if( axis == "y" )
+								global_param[ num ].y_ += deg;
+							if( axis == "z" )
+								global_param[ num ].z_ += deg;	
+
+							global_param_v[ num ].push_back( global_param[ num ] );
+							global_param[ num ] = gp::global_parameter();
+
+							{
+								cvShowImage( "show2d", graph[ num ].depth_.image_ );
+								cvShowImage( "show2dc", graph[ num ].color_.image_ );
+							}
+
+						}
+						if( operate == "rotate" )
+						{
+							if( axis == "x" )
+								global_param[ num ].x_theta_ += deg * pi;
+							if( axis == "y" )
+								global_param[ num ].y_theta_ += deg * pi;
+							if( axis == "z" )
+								global_param[ num ].z_theta_ += deg * pi;	
+
+							global_param_v[ num ].push_back( global_param[ num ] );
+							global_param[ num ] = gp::global_parameter();
+						}
+						if( operate == "icp" )
+						{
+							simple = false;
+							icp = true;
+						}
+						if( operate == "2d" )
+						{
+							flag_2d = true;
+						}
+						if( operate == "cut" )
+						{
+
+						}
+					}
+					input_come = false;
+					Sleep( 10 );
+					cout << "nf" << endl;
+				}
+				else
+				{
+					
+					if( input_end == true )
+					{
+						break;
+					}
+
+				}
 			}
 		}
 		
