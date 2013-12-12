@@ -166,15 +166,15 @@ namespace recording
 			::cvNamedWindow( runtime[ i ].depth_.window_name_.c_str(),  CV_WINDOW_KEEPRATIO );
 
 			runtime[ i ].kinect_->NuiImageStreamSetImageFrameFlags( \
-				runtime[i].color_.stream_handle_, \
+				runtime[i].color_.st2ream_handle_, \
 				NUI_IMAGE_STREAM_FLAG_SUPPRESS_NO_FRAME_DATA //これで 無効フレーム抑制
-				| NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE //Nearモード
+				//| NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE //Nearモード
 				);
 			
 			runtime[ i ].kinect_->NuiImageStreamSetImageFrameFlags( \
 				runtime[i].depth_.stream_handle_, \
 				NUI_IMAGE_STREAM_FLAG_SUPPRESS_NO_FRAME_DATA //これで 無効フレーム抑制
-				| NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE 
+				//| NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE 
 				);
 
 		}

@@ -287,32 +287,33 @@ void draw_new()
 	std::cout << "program started" << std::endl;
 	//baby __20130523T104214
 	//back            122852
-	std::string date_time;
+	std::string date_time = "20131106T114953";
 
 	//入力ファイルの日付取得
-	std::getline( setting_file, date_time );
+	//std::getline( setting_file, date_time );
 
-	int kinect_count = 0;
+	int kinect_count = 1;
 	//Kinectの台数を取得
-	setting_file >> kinect_count;
+	//setting_file >> kinect_count;
 
 
-	std::string bsub = "depth_XXXXX";
+	std::string bsub = "depth_20131106T115502";
 	std::string inputfile = "depth_" + date_time;
 	std::string inputfilecolor = "color_" + date_time;
-	auto const list = get_rect_to_draw( "E:/rec_kurume/area20131002T142501.txt" );//area20131002T151127.txt" );
+	auto const list = get_rect_to_draw( "C:/recorded_data_preterm/area20131106T114555.txt" );
+		//( "E:/rec_kurume/area20131002T142501.txt" );//area20131002T151127.txt" );
 
 
-	ifs_depth_back[ 0 ].open( "E:/rec_kurume/" + bsub + "_0.txt", ios::binary  );
+	ifs_depth_back[ 0 ].open( "C:/recorded_data_preterm/" + bsub + "_0.txt", ios::binary  );
 	/*ifs_depth_back[ 1 ].open( "E:/rec_kurume/" + bsub + "_1.txt", ios::binary  );
 	ifs_depth_back[ 2 ].open( "E:/rec_kurume/" + bsub + "_2.txt", ios::binary  );
 	ifs_depth_back[ 3 ].open( "E:/rec_kurume/" + bsub + "_3.txt", ios::binary  );
 	*/
-	ifs_color[ 0 ].open( "E:/rec_kurume/" + inputfilecolor + "_0.txt", ios::binary  );
+	ifs_color[ 0 ].open( "C:/recorded_data_preterm/" + inputfilecolor + "_0.txt", ios::binary  );
 	/*ifs_color[ 1 ].open( "E:/rec_kurume/" + inputfilecolor + "_1.txt", ios::binary  );
 	ifs_color[ 2 ].open( "E:/rec_kurume/" + inputfilecolor + "_2.txt", ios::binary  );
 	ifs_color[ 3 ].open( "E:/rec_kurume/" + inputfilecolor + "_3.txt", ios::binary  );
-	*/ifs_depth[ 0 ].open( "E:/rec_kurume/" + inputfile + "_0.txt", ios::binary  );
+	*/ifs_depth[ 0 ].open( "C:/recorded_data_preterm/" + inputfile + "_0.txt", ios::binary  );
 	/*ifs_depth[ 1 ].open( "E:/rec_kurume/" + inputfile + "_1.txt", ios::binary  );
 	ifs_depth[ 2 ].open( "E:/rec_kurume/" + inputfile + "_2.txt", ios::binary  );
 	ifs_depth[ 3 ].open( "E:/rec_kurume/" + inputfile + "_3.txt", ios::binary  );
@@ -673,22 +674,22 @@ void draw()
 	//baby __20130523T104214
 	//back            122852
 	int const kinect_count = 1;
-	std::string bsub = "depth_20131002T151844";
-	std::string inputfile = "depth_20131002T143235";
-	std::string inputfilecolor = "color_20131002T143235";
-	auto const list = get_rect_to_draw( "E:/rec_kurume/area20131002T142501.txt" );//area20131002T151127.txt" );
+	std::string bsub = "depth_20131106T115502";
+	std::string inputfile = "depth_20131106T114953";
+	std::string inputfilecolor = "color_20131106T114953";
+	auto const list = get_rect_to_draw( "C:/recorded_data_preterm/area20131106T114555.txt" );//area20131002T151127.txt" );
 
 
-	ifs_depth_back[ 0 ].open( "E:/rec_kurume/" + bsub + "_0.txt", ios::binary  );
+	ifs_depth_back[ 0 ].open( "C:/recorded_data_preterm/" + bsub + "_0.txt", ios::binary  );
 	/*ifs_depth_back[ 1 ].open( "E:/rec_kurume/" + bsub + "_1.txt", ios::binary  );
 	ifs_depth_back[ 2 ].open( "E:/rec_kurume/" + bsub + "_2.txt", ios::binary  );
 	ifs_depth_back[ 3 ].open( "E:/rec_kurume/" + bsub + "_3.txt", ios::binary  );
 	*/
-	ifs_color[ 0 ].open( "E:/rec_kurume/" + inputfilecolor + "_0.txt", ios::binary  );
+	ifs_color[ 0 ].open( "C:/recorded_data_preterm/" + inputfilecolor + "_0.txt", ios::binary  );
 	/*ifs_color[ 1 ].open( "E:/rec_kurume/" + inputfilecolor + "_1.txt", ios::binary  );
 	ifs_color[ 2 ].open( "E:/rec_kurume/" + inputfilecolor + "_2.txt", ios::binary  );
 	ifs_color[ 3 ].open( "E:/rec_kurume/" + inputfilecolor + "_3.txt", ios::binary  );
-	*/ifs_depth[ 0 ].open( "E:/rec_kurume/" + inputfile + "_0.txt", ios::binary  );
+	*/ifs_depth[ 0 ].open( "C:/recorded_data_preterm/" + inputfile + "_0.txt", ios::binary  );
 	/*ifs_depth[ 1 ].open( "E:/rec_kurume/" + inputfile + "_1.txt", ios::binary  );
 	ifs_depth[ 2 ].open( "E:/rec_kurume/" + inputfile + "_2.txt", ios::binary  );
 	ifs_depth[ 3 ].open( "E:/rec_kurume/" + inputfile + "_3.txt", ios::binary  );
@@ -770,14 +771,15 @@ void draw()
 			{
 				cloud_ptr[ i ] = pcl::PointCloud< pcl::PointXYZRGB >::Ptr( new pcl::PointCloud< pcl::PointXYZRGB > );
 			}
-
+			
 			
 			if( ! pause && next )
 			{
 				for( size_t i = 0; i < graph.size(); ++i )
 				{
 					ifs_depth[ i ].read( graph[ i ].depth_.image_->imageData, graph[ i ].depth_.image_->widthStep * graph[ i ].depth_.image_->height ); 
-
+					int aaa = graph[ i ].depth_.image_->width;
+					int aaa2 = graph[ i ].depth_.image_->widthStep;
 					//if( count % 2 == 0 )
 					ifs_color[ i ].read( graph[ i ].color_.image_->imageData, graph[ i ].color_.image_->width * graph[ i ].color_.image_->height * 4 ); 
 
@@ -1052,12 +1054,12 @@ int main()
 	NuiImageStreamSetImageFrameFlags( \
 		color, \
 		NUI_IMAGE_STREAM_FLAG_SUPPRESS_NO_FRAME_DATA //これで 無効フレーム抑制
-		| NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE //Nearモード
+		//| NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE //Nearモード
 		);
 	NuiImageStreamSetImageFrameFlags( \
 		depth, \
 		NUI_IMAGE_STREAM_FLAG_SUPPRESS_NO_FRAME_DATA //これで 無効フレーム抑制
-		| NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE //Nearモード
+		//| NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE //Nearモード
 		);
 
 	::WaitForSingleObject( event_c, INFINITE );

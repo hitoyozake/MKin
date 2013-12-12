@@ -554,7 +554,8 @@ public:
 							color_y >= 0 && color_y < color->height )
 						{
 							//‰æ–Ê“à‚Ìê‡
-
+							auto const dp = ( ( ( ( UINT16 * )( depth->imageData +\
+								depth->widthStep * y ) )[ x ] )  );
 							auto const real_point = NuiTransformDepthImageToSkeleton( x, y, ( ( ( ( UINT16 * )( depth->imageData +\
 								depth->widthStep * y ) )[ x ] )  ), NUI_IMAGE_RESOLUTION_640x480 );
 							pcl::PointXYZRGB basic_point;
