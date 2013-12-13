@@ -696,7 +696,6 @@ namespace recording
 
 		sound_recorder::sound_recorder snd_rec( current_time + ".wav" );
 
-		snd_rec.open_file();
 
 		for( int i = 0; i < kinect_count; ++i )	
 		{
@@ -734,9 +733,9 @@ namespace recording
 			runtime[ i ].ofs_d_ = boost::shared_ptr< ofstream >( new ofstream() );
 			runtime[ i ].ofs_d_->open( runtime[i].drive_ + ":/recorded_data/" + filename_d, ios::binary );
 			runtime[ i ].ofs_c_->open( runtime[i].drive_ + ":/recorded_data/" + filename_c, ios::binary );
-			
+
 			runtime[ i ].id_ = i;
-			
+
 			kinect_thread_obj[ i ] = thread( kinect_thread, \
 				ref( runtime[ i ] ), ref( go_sign[ i ] ),ref( end_sign[ i ] ), \
 				ref( ready_sign[ i ] ), ref( mouse[ i ] ) );
@@ -749,69 +748,82 @@ namespace recording
 		for( auto & i : go_sign )
 			i = 1;
 		boost::timer::cpu_timer timer;
-		while ( continue_flag )
+
+		//ここまで準備
+		std::cout << "ready" << std::endl;
+
+		std::string start_command = "";
+
+		std::cin >> start_command;
+
+		if( start_command == "start" )
 		{
-			int flag = 1;
+			snd_rec.open_file();//録音開始
 
-			for( auto const i : ready_sign )
+			while ( continue_flag )
 			{
-				flag = flag & i;
-			}
+				int flag = 1;
 
-			//終了信号
-			if( input_come )
-			{
-				if( input == "end" )
+				for( auto const i : ready_sign )
 				{
+					flag = flag & i;
+				}
+
+				//終了信号
+				if( input_come )
+				{
+					if( input == "end" )
+					{
+						continue_flag = false;
+						break;
+					}
+
+					input_come = false;
+				}
+
+				//cout << "hoge" << ++count << endl;
+				int key = ::cvWaitKey( 10 );
+				if ( key == 'q' ) {
 					continue_flag = false;
-					break;
 				}
 
-				input_come = false;
-			}
-
-			//cout << "hoge" << ++count << endl;
-			int key = ::cvWaitKey( 10 );
-			if ( key == 'q' ) {
-				continue_flag = false;
-			}
-
-			if( flag == 1 )
-			{
-				//全部待機済みなので、次のフレーム
-				for( auto & i : ready_sign )
-					i = 0;
-				for( auto & i : go_sign )
-					i = 1;
-
-				//ここで0.033秒待つ
-				auto const dif_time =  static_cast< boost::timer::nanosecond_type >( 0.035 * 1000000000 ) - timer.elapsed().wall;
-				if( dif_time > 0 )
+				if( flag == 1 )
 				{
-					auto const sleep_time = static_cast< long long >( dif_time * 0.000000001 * 1000 );
-					std::this_thread::sleep_for( \
-						std::chrono::milliseconds( sleep_time ) );
+					//全部待機済みなので、次のフレーム
+					for( auto & i : ready_sign )
+						i = 0;
+					for( auto & i : go_sign )
+						i = 1;
+
+					//ここで0.033秒待つ
+					auto const dif_time =  static_cast< boost::timer::nanosecond_type >( 0.035 * 1000000000 ) - timer.elapsed().wall;
+					if( dif_time > 0 )
+					{
+						auto const sleep_time = static_cast< long long >( dif_time * 0.000000001 * 1000 );
+						std::this_thread::sleep_for( \
+							std::chrono::milliseconds( sleep_time ) );
+					}
+
+					dlog << boost::format( "%2ld" ) %  ( timer.elapsed().wall * 0.000000001 * 1000 ) << endl;
+					timer.start();
 				}
-
-				dlog << boost::format( "%2ld" ) %  ( timer.elapsed().wall * 0.000000001 * 1000 ) << endl;
-				timer.start();
 			}
-		}
 
-		end_task( end_sign, kinect_thread_obj );
-		//スレッドの終了待ち
-		input_wait_thread.join();
+			end_task( end_sign, kinect_thread_obj );
+			//スレッドの終了待ち
+			input_wait_thread.join();
 
-		std::cout << "Waiting for Kinect Shutdown" << std::endl;
-		// 終了処理
-		for( auto const & i : runtime )
-		{
-			//set_mortor( 10, * runtime[ 0 ].kinect );
-			i.kinect_->NuiShutdown();	
+			std::cout << "Waiting for Kinect Shutdown" << std::endl;
+			// 終了処理
+			for( auto const & i : runtime )
+			{
+				//set_mortor( 10, * runtime[ 0 ].kinect );
+				i.kinect_->NuiShutdown();	
+			}
+			snd_rec.stop_recording();
 		}
 		//Windowを閉じる
 		::cvDestroyAllWindows();
-		snd_rec.stop_recording();
 
 		std::cout << "PROGRAM WAS CLOSED" << std::endl;
 		

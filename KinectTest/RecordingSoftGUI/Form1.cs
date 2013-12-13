@@ -16,6 +16,8 @@ namespace RecordingSoftGUI
         private Process area_selector = null;
         private Process recorder = null;
         private Boolean record_started = false;
+        private int minutes = 0;
+        private int seconds = 0;
 
 
         public Form1()
@@ -25,10 +27,39 @@ namespace RecordingSoftGUI
 
         private void Form1_Load( object sender , EventArgs e )
         {
-            button1.Enabled = true;
+            button1.Enabled = false;
             button2.Enabled = false;
             button2.Visible = false;
             //button1.Enabled = false;
+
+            if ( recorder == null )
+            {
+                recorder = new Process();
+                recorder.StartInfo.CreateNoWindow = false;
+                recorder.StartInfo.RedirectStandardInput = true;
+                recorder.StartInfo.UseShellExecute = false;
+                //area_selector.EnableRaisingEvents = true;
+                recorder.StartInfo.FileName = @"./KinectTest.exe";
+                //Exitした時の処理を追加
+                recorder.Exited += recorder_exited;
+            }
+            recorder.Start();
+            String areaFilename = GetAreaFileName();
+            System.Threading.Thread.Sleep( 100 );
+            recorder.StandardInput.WriteLine( areaFilename );
+
+            while ( true )
+            {
+                var str = recorder.StandardOutput.ReadLine();
+
+                if ( str.IndexOf( "ready" ) >= 0 )
+                {
+                    break;
+                }
+            }
+
+            button1.Enabled = true;
+
         }
 
         public String GetAreaFileName()
@@ -64,24 +95,15 @@ namespace RecordingSoftGUI
 
                 button1.Text = "Stop";
 
-                if ( recorder == null )
-                {
-                    recorder = new Process();
-                    recorder.StartInfo.RedirectStandardInput = true;
-                    recorder.StartInfo.UseShellExecute = false;
-                    //area_selector.EnableRaisingEvents = true;
-                    recorder.StartInfo.FileName = @"./KinectTest.exe";
-                    //Exitした時の処理を追加
-                    recorder.Exited += recorder_exited;
-                }
-                recorder.Start();
-                String areaFilename= GetAreaFileName();
-                System.Threading.Thread.Sleep( 100 );
-                recorder.StandardInput.WriteLine( areaFilename );
+                recorder.StandardInput.WriteLine( "start" );
+                timer1.Start(); //タイマー開始
 
             }
             else
             {
+                timer1.Stop();
+                seconds = 0;
+                minutes = 0;
                 recorder.StandardInput.WriteLine( "end" );
                 recorder.WaitForExit();
                 Close();                
@@ -118,6 +140,21 @@ namespace RecordingSoftGUI
             area_selector = null;
             button1.Enabled = true;
             button2.Enabled = true;
+        }
+
+        private void timer1_Tick( object sender , EventArgs e )
+        {
+            ++seconds;
+
+            if( seconds > 0 && seconds % 60 == 0 )
+            {
+                ++minutes;
+            }
+
+            //描画更新
+            label2.Text = minutes.ToString( "D2" ) + "："
+                + ( seconds % 60 ).ToString( "D2" );
+
         }
     }
 }
