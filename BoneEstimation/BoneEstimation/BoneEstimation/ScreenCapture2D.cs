@@ -12,7 +12,7 @@ using Microsoft.Xna.Framework.Media;
 
 namespace BoneEstimation
 {
-    class ScreenCapture2D
+    public class ScreenCapture2D
     {
         public GraphicsDevice graphicsDevice = null;
         public RenderTarget2D renderTarget = null;
@@ -24,6 +24,7 @@ namespace BoneEstimation
         }
 
         public void Init( GraphicsDevice device )
+
         {
             if( graphicsDevice == null )
             {

@@ -76,6 +76,11 @@ namespace BoneEstimation
         }
 
 
+        void InitializeObjects()
+        {
+            captureDevice.Init( GraphicsDevice );
+        }
+
         /// <summary>
         /// ÉÇÉfÉãÇì«Ç›çûÇﬁ
         /// </summary>
@@ -96,7 +101,7 @@ namespace BoneEstimation
             bodyParts[ ( int )BodyPartsName.ArmR ].parent =
                 bodyParts[ ( int )BodyPartsName.UpperArmR ];
 
-            bodyParts[ ( int )BodyPartsName.ArmR ].position.Y = 3f;
+            bodyParts[ ( int )BodyPartsName.ArmR ].position.Y = 1f;
 
         }
 
@@ -151,6 +156,10 @@ namespace BoneEstimation
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Draw( GameTime gameTime )
         {
+            bodyParts[ 0 ].angle.Z += 1f;
+            bodyParts[ 1 ].angle.Z = 87f;
+            
+            
             GraphicsDevice.Clear( XNABackColor );
 
             // TODO: Add your drawing code here
