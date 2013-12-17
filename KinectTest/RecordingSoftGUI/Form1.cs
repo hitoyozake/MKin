@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Media;
 
 namespace RecordingSoftGUI
 {
@@ -18,6 +19,8 @@ namespace RecordingSoftGUI
         private Boolean record_started = false;
         private int minutes = 0;
         private int seconds = 0;
+        private SoundPlayer startSound = new SoundPlayer( @"./start.wav" );
+        private SoundPlayer endSound = new SoundPlayer( @"./end.wav" );
 
 
         public Form1()
@@ -35,8 +38,10 @@ namespace RecordingSoftGUI
             if ( recorder == null )
             {
                 recorder = new Process();
-                recorder.StartInfo.CreateNoWindow = false;
+                recorder.StartInfo.CreateNoWindow = true;
                 recorder.StartInfo.RedirectStandardInput = true;
+                recorder.StartInfo.RedirectStandardOutput = true;
+
                 recorder.StartInfo.UseShellExecute = false;
                 //area_selector.EnableRaisingEvents = true;
                 recorder.StartInfo.FileName = @"./KinectTest.exe";
@@ -48,15 +53,15 @@ namespace RecordingSoftGUI
             System.Threading.Thread.Sleep( 100 );
             recorder.StandardInput.WriteLine( areaFilename );
 
-            while ( true )
-            {
-                var str = recorder.StandardOutput.ReadLine();
+            //while ( true )
+            //{
+            //    var str = recorder.StandardOutput.ReadLine();
 
-                if ( str.IndexOf( "ready" ) >= 0 )
-                {
-                    break;
-                }
-            }
+            //    if ( str.IndexOf( "ready" ) >= 0 )
+            //    {
+            //        break;
+            //    }
+            //}
 
             button1.Enabled = true;
 
@@ -92,7 +97,7 @@ namespace RecordingSoftGUI
             {
                 button2.Enabled = false;
                 record_started = true;
-
+                startSound.Play();
                 button1.Text = "Stop";
 
                 recorder.StandardInput.WriteLine( "start" );
@@ -102,12 +107,15 @@ namespace RecordingSoftGUI
             else
             {
                 timer1.Stop();
+                endSound.Play();
                 seconds = 0;
                 minutes = 0;
                 recorder.StandardInput.WriteLine( "end" );
-                recorder.WaitForExit();
-                Close();                
+                timer2.Enabled = true;
+                timer1.Enabled = false;
                 //終了処理
+
+                button1.Enabled = false;
             }
         }
 
@@ -155,6 +163,59 @@ namespace RecordingSoftGUI
             label2.Text = minutes.ToString( "D2" ) + "："
                 + ( seconds % 60 ).ToString( "D2" );
 
+        }
+
+        public int endTimer = 0;
+
+        private void timer2_Tick( object sender , EventArgs e )
+        {
+            //終了処理
+            if( recorder != null )
+            {
+                ++endTimer;
+
+
+                if ( recorder.HasExited == true )
+                {
+                    recorder = null;
+                }
+                else
+                {
+
+                    if ( endTimer >= 90 )
+                    {
+                        recorder.Kill();
+                        recorder = null;
+                    }
+                }
+
+            }
+            else
+            {
+                Close();
+            }
+
+
+
+
+
+        }
+
+        private void Form1_FormClosing( object sender , FormClosingEventArgs e )
+        {
+            if ( recorder != null )
+            {
+                timer1.Stop();
+                endSound.Play();
+                seconds = 0;
+                minutes = 0;
+                recorder.StandardInput.WriteLine( "end" );
+                timer2.Enabled = true;
+                timer1.Enabled = false;
+                //終了処理
+
+                button1.Enabled = false;
+            }
         }
     }
 }

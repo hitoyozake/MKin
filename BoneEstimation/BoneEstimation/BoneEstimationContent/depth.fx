@@ -55,12 +55,16 @@ float4 ShadowPixelShaderFunction( ShadowVertexShaderOutput input ) : COLOR0
 	float depth = input.Depth.z;// ( input.Depth.z - 10 ) / 16;//( input.Depth.z / input.Depth.w );
 	float r = 0, g = 0, b = 0;
 
-	if( depth > 0 && depth <= 1 )
+	if( depth > 0 && depth <= 0.4 )
+	{
+		r = ( 0.4f - depth ) / 0.4f;
+		b = 1.0f;
+	}
+	/*if( depth > 0 && depth <= 1 )
 	{
 		r = ( 1.0f - depth ) / 1.0f;
 		b = 1.0f;
-	}
-
+	}*/
 	return float4( r, g, b, 1.0f );
 }
 

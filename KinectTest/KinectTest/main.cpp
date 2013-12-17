@@ -144,7 +144,7 @@ namespace recording
 			// OpenCVの初期設定
 			runtime[i].color_.image_ = ::cvCreateImage( cvSize( x, y ), IPL_DEPTH_8U, 4 );
 			::cvNamedWindow( runtime[ i ].color_.window_name_.c_str(),  CV_WINDOW_KEEPRATIO );
-			
+
 			//深度==============================================================
 			::NuiImageResolutionToSize( NUI_IMAGE_RESOLUTION_640x480, x, y );	
 
@@ -166,11 +166,11 @@ namespace recording
 			::cvNamedWindow( runtime[ i ].depth_.window_name_.c_str(),  CV_WINDOW_KEEPRATIO );
 
 			runtime[ i ].kinect_->NuiImageStreamSetImageFrameFlags( \
-				runtime[i].color_.st2ream_handle_, \
+				runtime[i].color_.stream_handle_, \
 				NUI_IMAGE_STREAM_FLAG_SUPPRESS_NO_FRAME_DATA //これで 無効フレーム抑制
 				//| NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE //Nearモード
 				);
-			
+
 			runtime[ i ].kinect_->NuiImageStreamSetImageFrameFlags( \
 				runtime[i].depth_.stream_handle_, \
 				NUI_IMAGE_STREAM_FLAG_SUPPRESS_NO_FRAME_DATA //これで 無効フレーム抑制
@@ -280,7 +280,7 @@ namespace recording
 
 		NUI_IMAGE_FRAME * image_frame_depth = & image_frame_depth_;
 		NUI_IMAGE_FRAME * image_frame_color = & image_frame_color_;
-	
+
 		while( end_sign == 0 )
 		{
 			while( go_sign == 1 )
@@ -387,15 +387,15 @@ namespace recording
 						if( runtime.record_start_flag_ )
 						{
 							cvSetImageROI( runtime.color_.image_, cvRect( mi.x1_, mi.y1_, mi.x2_ - mi.x1_, mi.y2_ - mi.y1_ ) );
-							
+
 							cvCopy( runtime.color_.image_, runtime.color_.buf_ );
-							
+
 							runtime.ofs_c_->write( \
 								runtime.color_.buf_->imageData, runtime.color_.buf_->widthStep * runtime.color_.buf_->height );
-							
-							
+
+
 							::cvShowImage( runtime.color_.window_name_.c_str(), runtime.color_.image_ );
-							
+
 							cvResetImageROI( runtime.color_.image_ );
 						}
 						else
@@ -477,7 +477,7 @@ namespace recording
 										pixel_ptr[ 1 ] = 140;
 										pixel_ptr[ 2 ]  = 140; 
 									}
-									
+
 								}
 							}
 #pragma endregion
@@ -501,15 +501,15 @@ namespace recording
 						if( runtime.record_start_flag_ )
 						{
 							cvSetImageROI( depth_image, cvRect( mi.x1_, mi.y1_, mi.x2_ - mi.x1_, mi.y2_ - mi.y1_ ) );
-							
+
 							cvCopy( depth_image, runtime.depth_.buf_ );
-		
+
 							runtime.ofs_d_->write( runtime.depth_.buf_->imageData, runtime.depth_.buf_->widthStep * runtime.depth_.buf_->height );
 
 							cvResetImageROI( depth_image );//なくても良いかも
 						}
 					}
-					
+
 					// カメラデータの解放
 					runtime.kinect_->NuiImageStreamReleaseFrame( runtime.color_.stream_handle_, image_frame_color );
 					runtime.kinect_->NuiImageStreamReleaseFrame( runtime.depth_.stream_handle_, image_frame_depth );
@@ -565,7 +565,7 @@ namespace recording
 		}
 
 	};
-	
+
 	std::vector< rect > get_rect_to_draw( std::string const & filename )
 	{	
 		std::ifstream area( filename );
@@ -621,7 +621,7 @@ namespace recording
 
 
 		ofs.close();
-		
+
 	}
 
 	void draw()
@@ -629,7 +629,7 @@ namespace recording
 		using namespace std;
 
 		auto const current_time = generate_current_day_and_time();
-		
+
 		std::vector< std::string > setting_write_str;
 		//current_time
 		//キネクトの台数
@@ -640,8 +640,8 @@ namespace recording
 		ofstream dlog( "debug_log_" + current_time + ".txt" );
 		//解像度の設定
 		NUI_IMAGE_RESOLUTION const resolution = NUI_IMAGE_RESOLUTION_640x480;
-		
-		
+
+
 		// アクティブなKinectの数を取得する
 		int kinect_count = 0;
 		::NuiGetSensorCount( std::addressof( kinect_count ) );
@@ -658,7 +658,7 @@ namespace recording
 			return;
 		}
 		setting_write_str.push_back( boost::lexical_cast< std::string >( kinect_count ) );
-		
+
 
 		// Kinectのインスタンスを生成する
 		typedef std::vector< Runtime > Runtimes;
@@ -694,8 +694,6 @@ namespace recording
 
 		ifstream drive_info( "./drive.txt" );
 
-		sound_recorder::sound_recorder snd_rec( current_time + ".wav" );
-
 
 		for( int i = 0; i < kinect_count; ++i )	
 		{
@@ -709,7 +707,6 @@ namespace recording
 				mouse[ i ].y2_ - mouse[ i ].y1_ ),IPL_DEPTH_8U, 4 );
 			runtime[ i ].depth_.buf_ = cvCreateImage( cvSize( mouse[ i ].x2_ - mouse[ i ].x1_, \
 				mouse[ i ].y2_ - mouse[ i ].y1_ ),IPL_DEPTH_16U, 1 );
-			runtime[ i ].record_start_flag_ = true;
 
 
 			setting_write_str.push_back( ( std::string )"width:" + boost::lexical_cast< std::string >( mouse[ i ].x2_ - mouse[ i ].x1_ ) );
@@ -741,6 +738,10 @@ namespace recording
 				ref( ready_sign[ i ] ), ref( mouse[ i ] ) );
 		}
 
+
+		sound_recorder::sound_recorder snd_rec( runtime[ 0 ].drive_ + ":/recorded_data/" + current_time + ".wav" );
+
+
 		//セッティングファイルの書き出し
 		write_settingfile( current_time, setting_write_str );
 
@@ -754,82 +755,89 @@ namespace recording
 
 		std::string start_command = "";
 
-		std::cin >> start_command;
+		//std::cin >> start_command;
 
-		if( start_command == "start" )
+		start_command = "start";
+
+
+		while ( continue_flag )
 		{
-			snd_rec.open_file();//録音開始
+			int flag = 1;
 
-			while ( continue_flag )
+			for( auto const i : ready_sign )
 			{
-				int flag = 1;
+				flag = flag & i;
+			}
 
-				for( auto const i : ready_sign )
+			//終了信号
+			if( input_come )
+			{
+				if( input == "end" )
 				{
-					flag = flag & i;
-				}
-
-				//終了信号
-				if( input_come )
-				{
-					if( input == "end" )
-					{
-						continue_flag = false;
-						break;
-					}
-
-					input_come = false;
-				}
-
-				//cout << "hoge" << ++count << endl;
-				int key = ::cvWaitKey( 10 );
-				if ( key == 'q' ) {
 					continue_flag = false;
+					break;
 				}
-
-				if( flag == 1 )
+				if( input == "start" )
 				{
-					//全部待機済みなので、次のフレーム
-					for( auto & i : ready_sign )
-						i = 0;
-					for( auto & i : go_sign )
-						i = 1;
+					snd_rec.open_file();
 
-					//ここで0.033秒待つ
-					auto const dif_time =  static_cast< boost::timer::nanosecond_type >( 0.035 * 1000000000 ) - timer.elapsed().wall;
-					if( dif_time > 0 )
+					for( int i = 0; i < runtime.size(); ++i )
 					{
-						auto const sleep_time = static_cast< long long >( dif_time * 0.000000001 * 1000 );
-						std::this_thread::sleep_for( \
-							std::chrono::milliseconds( sleep_time ) );
+						runtime[ i ].record_start_flag_ = true;
 					}
-
-					dlog << boost::format( "%2ld" ) %  ( timer.elapsed().wall * 0.000000001 * 1000 ) << endl;
-					timer.start();
+					input = "";
 				}
+
+				input_come = false;
 			}
 
-			end_task( end_sign, kinect_thread_obj );
-			//スレッドの終了待ち
-			input_wait_thread.join();
+			//cout << "hoge" << ++count << endl;
+			int key = ::cvWaitKey( 10 );
+			if ( key == 'q' ) {
+				continue_flag = false;
+			}
 
-			std::cout << "Waiting for Kinect Shutdown" << std::endl;
-			// 終了処理
-			for( auto const & i : runtime )
+			if( flag == 1 )
 			{
-				//set_mortor( 10, * runtime[ 0 ].kinect );
-				i.kinect_->NuiShutdown();	
+				//全部待機済みなので、次のフレーム
+				for( auto & i : ready_sign )
+					i = 0;
+				for( auto & i : go_sign )
+					i = 1;
+
+				//ここで0.033秒待つ
+				auto const dif_time =  static_cast< boost::timer::nanosecond_type >( 0.035 * 1000000000 ) - timer.elapsed().wall;
+				if( dif_time > 0 )
+				{
+					auto const sleep_time = static_cast< long long >( dif_time * 0.000000001 * 1000 );
+					std::this_thread::sleep_for( \
+						std::chrono::milliseconds( sleep_time ) );
+				}
+
+				dlog << boost::format( "%2ld" ) %  ( timer.elapsed().wall * 0.000000001 * 1000 ) << endl;
+				timer.start();
 			}
-			snd_rec.stop_recording();
 		}
+
+		end_task( end_sign, kinect_thread_obj );
+		//スレッドの終了待ち
+		input_wait_thread.join();
+
+		std::cout << "Waiting for Kinect Shutdown" << std::endl;
+		// 終了処理
+		for( auto const & i : runtime )
+		{
+			//set_mortor( 10, * runtime[ 0 ].kinect );
+			i.kinect_->NuiShutdown();	
+		}
+		snd_rec.stop_recording();
+
 		//Windowを閉じる
 		::cvDestroyAllWindows();
 
 		std::cout << "PROGRAM WAS CLOSED" << std::endl;
-		
 	}
 }
-
 int main()
 {
 	recording::draw();

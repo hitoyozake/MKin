@@ -13,11 +13,11 @@ namespace BoneEstimation
 {
     public enum BodyPartsName
     {
+        Trunk,
         UpperArmR,
         ArmR,
         Size
     }
-
 
     public class BodyParts
     {
@@ -29,8 +29,8 @@ namespace BoneEstimation
         public Vector3 baseAngle = Vector3.Zero;
 
         public BodyParts parent = null;
-        public Vector3 scales = new Vector3( 1f, 1f, 1f );
-        public bool usingDefaultEffect = true;
+        public Vector3 scales = new Vector3( 0.045f, 0.045f, 0.045f );
+        private bool usingDefaultEffect = true;
         public Matrix LightView =  Matrix.CreateLookAt( new Vector3( 0f, 0f, 255f ), Vector3.Zero, Vector3.Up );
         public Matrix Projection = Matrix.CreatePerspectiveFieldOfView(
                         MathHelper.ToRadians(45.0f), 640f/480f, 0.00001f, 1000f);
@@ -40,19 +40,29 @@ namespace BoneEstimation
 
         public BodyParts()
         {
-
+            
         }
+
+        public void SetView( Vector3 lookFrom )
+        {
+            View = Matrix.CreateLookAt( lookFrom, Vector3.Zero, Vector3.Up );
+        }
+
+
 
         public void Update()
         {
             World = 
+                Matrix.CreateTranslation( basePosition ) * 
                 Matrix.CreateRotationX( MathHelper.ToRadians( angle.X + baseAngle.X ) )
                 *
                 Matrix.CreateRotationY( MathHelper.ToRadians( angle.Y + baseAngle.Y ) )
                 *
                 Matrix.CreateRotationZ( MathHelper.ToRadians( angle.Z + baseAngle.Z ) )
                 *
-                Matrix.CreateTranslation( position );
+                Matrix.CreateTranslation( position )
+                
+                ;
             var p = parent; 
             
             while( p != null )

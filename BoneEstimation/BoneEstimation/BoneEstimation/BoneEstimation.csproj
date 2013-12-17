@@ -108,11 +108,18 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BodyParts.cs" />
+    <Compile Include="Logger.cs" />
+    <Compile Include="NormalDistributionRandom.cs" />
+    <Compile Include="Particle.cs" />
+    <Compile Include="ParticleSwarmOptimization.cs" />
     <Compile Include="PoseEvaluater.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Game1.cs" />
+    <Compile Include="PSOtechnique.cs" />
     <Compile Include="ScreenCapture2D.cs" />
+    <Compile Include="SqueezeSearch.cs" />
+    <Compile Include="TestEnv.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Game.ico" />

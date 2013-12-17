@@ -39,6 +39,7 @@ namespace BoneEstimation
 
         public void BeginCapture( GraphicsDevice gd )
         {
+            //無くても勝手に背景色が決まる
             //graphicsDevice.Clear( Color.White );
             gd.SetRenderTarget( renderTarget );
         }
@@ -51,6 +52,8 @@ namespace BoneEstimation
             //var x = System.IO.File.Create("hoge.jpg");
             //レンダーターゲットをバックバッファーに戻す
             graphicsDevice.SetRenderTarget( null );
+
+            graphicsDevice.Textures[ 0 ] = null;
 
             tmpTexture.GetData( tmpPixels );
 
