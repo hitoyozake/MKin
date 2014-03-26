@@ -416,7 +416,7 @@ namespace BoneEstimation
         public void InitializeViewer()
         {
             drawList = new List<BodyParts>();
-            drawList.Add( bodyParts[ ( int )BodyPartsName.Trunk ] );
+            //drawList.Add( bodyParts[ ( int )BodyPartsName.Trunk ] );
             drawList.Add( bodyParts[ ( int )BodyPartsName.ArmR ] );
             drawList.Add( bodyParts[ ( int )BodyPartsName.UpperArmR ] );
         }
@@ -531,9 +531,9 @@ namespace BoneEstimation
             //   bodyParts[ ( int )BodyPartsName.Trunk ];
 
 
-            bodyParts[ ( int )BodyPartsName.UpperArmR ].basePosition.Y = 0.5f;
-            bodyParts[ ( int )BodyPartsName.UpperArmR ].position.Y = 0.5f;
-            bodyParts[ ( int )BodyPartsName.UpperArmR ].position.X = -1f;
+            bodyParts[ ( int )BodyPartsName.UpperArmR ].basePosition.Y = 0f;
+            bodyParts[ ( int )BodyPartsName.UpperArmR ].position.Y = 0f;
+            bodyParts[ ( int )BodyPartsName.UpperArmR ].position.X = 0f;
 
 
             bodyParts[ ( int )BodyPartsName.ArmR ].basePosition.Y = 0.5f;

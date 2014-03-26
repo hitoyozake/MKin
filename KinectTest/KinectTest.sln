@@ -27,6 +27,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RecordingSoftGUI", "Recordi
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "KinectHistgram", "KinectHistgram\KinectHistgram.vcxproj", "{01248896-EE9D-447F-AABE-364E2FAB4F62}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ICPOnly", "ICPOnly\ICPOnly.vcxproj", "{B95FC8E8-CF24-4675-9B0E-967C697F6557}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -171,6 +173,16 @@ Global
 		{01248896-EE9D-447F-AABE-364E2FAB4F62}.Release|Mixed Platforms.Build.0 = Release|Win32
 		{01248896-EE9D-447F-AABE-364E2FAB4F62}.Release|Win32.ActiveCfg = Release|Win32
 		{01248896-EE9D-447F-AABE-364E2FAB4F62}.Release|Win32.Build.0 = Release|Win32
+		{B95FC8E8-CF24-4675-9B0E-967C697F6557}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{B95FC8E8-CF24-4675-9B0E-967C697F6557}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{B95FC8E8-CF24-4675-9B0E-967C697F6557}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{B95FC8E8-CF24-4675-9B0E-967C697F6557}.Debug|Win32.ActiveCfg = Debug|Win32
+		{B95FC8E8-CF24-4675-9B0E-967C697F6557}.Debug|Win32.Build.0 = Debug|Win32
+		{B95FC8E8-CF24-4675-9B0E-967C697F6557}.Release|Any CPU.ActiveCfg = Release|Win32
+		{B95FC8E8-CF24-4675-9B0E-967C697F6557}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{B95FC8E8-CF24-4675-9B0E-967C697F6557}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{B95FC8E8-CF24-4675-9B0E-967C697F6557}.Release|Win32.ActiveCfg = Release|Win32
+		{B95FC8E8-CF24-4675-9B0E-967C697F6557}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

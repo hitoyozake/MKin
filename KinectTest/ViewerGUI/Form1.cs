@@ -63,6 +63,19 @@ namespace ViewerGUI
                 + value  + "\n";
         }
 
+        private void ErrorMessage()
+        {
+            label4.Text = "強制終了します．\n";
+            label4.Text += "考えられる原因：Kinectのコードの抜け\n";
+            label4.Text += "対処：Kinectのコードの確認・再起動．Windowsの再起動";
+
+            label4.Visible = true;
+
+
+
+
+        }
+
         private void button1_Click( object sender , EventArgs e )
         {
             //起動確認

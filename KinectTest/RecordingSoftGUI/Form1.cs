@@ -21,7 +21,7 @@ namespace RecordingSoftGUI
         private int seconds = 0;
         private SoundPlayer startSound = new SoundPlayer( @"./start.wav" );
         private SoundPlayer endSound = new SoundPlayer( @"./end.wav" );
-
+        private bool error_occured = false;
 
         public Form1()
         {
@@ -33,7 +33,7 @@ namespace RecordingSoftGUI
             button1.Enabled = false;
             button2.Enabled = false;
             button2.Visible = false;
-            //button1.Enabled = false;
+            button1.Enabled = false;
 
             if ( recorder == null )
             {
@@ -53,15 +53,15 @@ namespace RecordingSoftGUI
             System.Threading.Thread.Sleep( 100 );
             recorder.StandardInput.WriteLine( areaFilename );
 
-            //while ( true )
-            //{
-            //    var str = recorder.StandardOutput.ReadLine();
+            ////while ( true )
+            ////{
+            ////    var str = recorder.StandardOutput.ReadLine();
 
-            //    if ( str.IndexOf( "ready" ) >= 0 )
-            //    {
-            //        break;
-            //    }
-            //}
+            ////    if ( str.IndexOf( "ready" ) >= 0 )
+            ////    {
+            ////        break;
+            ////    }
+            ////}
 
             button1.Enabled = true;
 
@@ -88,19 +88,35 @@ namespace RecordingSoftGUI
             else
                 return "NULL";
         }
+        private void ErrorMessage()
+        {
+            label3.Text = "強制終了します．\n";
+            label3.Text += "考えられる原因：Kinectのコードの抜け\n";
+            label3.Text += "対処：Kinectのコードの確認・再起動．\n　　　Windowsの再起動";
 
+            //label3.Visible = true;
+
+
+
+
+        }
 
         //Recordボタン
         private void button1_Click( object sender , EventArgs e )
         {
+
+            if( error_occured )
+            {
+                ErrorMessage();
+            }
             if ( record_started == false )
             {
                 button2.Enabled = false;
                 record_started = true;
-                startSound.Play();
+                //startSound.Play();
                 button1.Text = "Stop";
 
-                recorder.StandardInput.WriteLine( "start" );
+                //recorder.StandardInput.WriteLine( "start" );
                 timer1.Start(); //タイマー開始
 
             }
@@ -110,7 +126,7 @@ namespace RecordingSoftGUI
                 endSound.Play();
                 seconds = 0;
                 minutes = 0;
-                recorder.StandardInput.WriteLine( "end" );
+                //recorder.StandardInput.WriteLine( "end" );
                 timer2.Enabled = true;
                 timer1.Enabled = false;
                 //終了処理
@@ -216,6 +232,11 @@ namespace RecordingSoftGUI
 
                 button1.Enabled = false;
             }
+        }
+
+        private void label3_Click( object sender , EventArgs e )
+        {
+
         }
     }
 }

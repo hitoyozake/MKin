@@ -331,11 +331,11 @@ void draw()
 
 		auto const rect = get_rect_to_draw( "F:/area.txt" );//"F:/recorded_data/area.txt" );
 		
-		if( graph.size() != rect.size() )
+		/*if( graph.size() != rect.size() )
 		{
 			std::cout << "graph.size() != rect.size() . ログに記されてるファイル数と違う" << std::endl;
 			return;
-		}
+		}*/
 		IplImage * depth_back[ 4 ];
 
 		// OpenCVの初期設定

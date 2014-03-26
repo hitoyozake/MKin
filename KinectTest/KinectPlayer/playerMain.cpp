@@ -353,7 +353,6 @@ void color_view_prepared( IplImage * image, IplImage * dst, int const x1, int co
 	cout << "MIN: " << min_depth << endl;
 	cout << "MAX: " << max_depth << endl;
 
-
 	for( int y = y1; y < y2; ++y )
 	{
 		for( int x = x1; x < x2; ++x )

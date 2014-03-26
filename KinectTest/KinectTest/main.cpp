@@ -8,7 +8,7 @@
 #include <queue>
 #include <chrono>
 #include <boost/format.hpp>
-#include <boost\shared_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/optional.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/timer/timer.hpp>
@@ -111,7 +111,6 @@ namespace recording
 		NUI_IMAGE_RESOLUTION const resolution = NUI_IMAGE_RESOLUTION_640x480;
 
 
-
 		for( size_t i = 0; i < runtime.size(); ++i )
 		{
 			runtime[ i ].record_start_flag_ = false;
@@ -168,13 +167,13 @@ namespace recording
 			runtime[ i ].kinect_->NuiImageStreamSetImageFrameFlags( \
 				runtime[i].color_.stream_handle_, \
 				NUI_IMAGE_STREAM_FLAG_SUPPRESS_NO_FRAME_DATA //これで 無効フレーム抑制
-				//| NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE //Nearモード
+				| NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE //Nearモード
 				);
 
 			runtime[ i ].kinect_->NuiImageStreamSetImageFrameFlags( \
 				runtime[i].depth_.stream_handle_, \
 				NUI_IMAGE_STREAM_FLAG_SUPPRESS_NO_FRAME_DATA //これで 無効フレーム抑制
-				//| NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE 
+				| NUI_IMAGE_STREAM_FLAG_ENABLE_NEAR_MODE 
 				);
 
 		}
@@ -262,7 +261,7 @@ namespace recording
 		bool video_end = false, video_queue_writing = false;
 		queue< cv::Ptr< IplImage > > image_queue;
 
-		thread vw_thread( video_thread, runtime.vw_, std::ref( image_queue ), \
+		//thread vw_thread( video_thread, runtime.vw_, std::ref( image_queue ), \
 			std::ref( video_queue_writing ), std::ref( video_end ) );
 
 		bool rect_init = false;
@@ -313,7 +312,6 @@ namespace recording
 				// 画像データの取得
 				if( ! image_get_succeeded )
 				{
-
 					//if failed then write pre frame
 					//cvResize( runtime.color_.image_, resized );
 
@@ -530,9 +528,10 @@ namespace recording
 		resized.release();
 		depth_image.release();
 
-		std::cout << vw_thread.get_id() << "・・・・";
-		vw_thread.join();
-		std::cout << " Video Thread End" << std::endl;
+		//avi保存を使う時
+		//std::cout << vw_thread.get_id() << "・・・・";
+		//vw_thread.join();
+		//std::cout << " Video Thread End" << std::endl;
 		//VIDEOスレッドの終了と同時にAVIもcloseされる...
 	}
 
@@ -637,7 +636,7 @@ namespace recording
 		//drive
 		setting_write_str.push_back( current_time );
 
-		ofstream dlog( "debug_log_" + current_time + ".txt" );
+		ofstream dlog( std::string( "C:/" ) + "debug_log_" + current_time + ".txt" );
 		//解像度の設定
 		NUI_IMAGE_RESOLUTION const resolution = NUI_IMAGE_RESOLUTION_640x480;
 
@@ -658,7 +657,6 @@ namespace recording
 			return;
 		}
 		setting_write_str.push_back( boost::lexical_cast< std::string >( kinect_count ) );
-
 
 		// Kinectのインスタンスを生成する
 		typedef std::vector< Runtime > Runtimes;
@@ -692,6 +690,7 @@ namespace recording
 		vector< thread > kinect_thread_obj( kinect_count );
 		vector< mouse_info > mouse( kinect_count );
 
+		//ドライブの情報
 		ifstream drive_info( "./drive.txt" );
 
 

@@ -67,6 +67,7 @@ namespace BoneEstimation
             
             while( p != null )
             {
+
                 World *= 
                 Matrix.CreateRotationX( MathHelper.ToRadians( p.angle.X + p.baseAngle.X ) )
                 *
